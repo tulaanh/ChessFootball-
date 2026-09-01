@@ -78,8 +78,15 @@ export default function ChessFootballGame() {
       },
       onPacketReceived: (packet: NetworkPacket) => {
         if (packet.type === 'SYNC_STATE') {
+          const isGoalScored =
+            Boolean(packet.board.lastGoalScorer) &&
+            (packet.board.score.white !== (window as any).__CHESS_FOOTBALL_BOARD_STATE__?.score?.white ||
+              packet.board.score.black !== (window as any).__CHESS_FOOTBALL_BOARD_STATE__?.score?.black);
+
           setBoard(packet.board);
-          if (packet.board.lastGoalScorer) {
+          (window as any).__CHESS_FOOTBALL_BOARD_STATE__ = packet.board;
+
+          if (isGoalScored) {
             setShowGoalBanner(true);
           }
         } else if (packet.type === 'EMOTE') {
@@ -1007,7 +1014,10 @@ export default function ChessFootballGame() {
         <GoalCelebration
           team={board.lastGoalScorer.team}
           scorerName={board.lastGoalScorer.pieceName}
-          onClose={() => setShowGoalBanner(false)}
+          onClose={() => {
+            setShowGoalBanner(false);
+            setBoard((prev) => ({ ...prev, lastGoalScorer: undefined }));
+          }}
         />
       )}
 

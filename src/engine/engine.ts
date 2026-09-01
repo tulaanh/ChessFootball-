@@ -614,6 +614,7 @@ export function executeMove(
     turnNumber: isTurnOver ? board.turnNumber + 1 : board.turnNumber,
     selectedPieceId: null,
     activeAction: null,
+    lastGoalScorer: undefined,
     commentary,
   };
 }
@@ -773,6 +774,7 @@ export function executeKick(
     turnNumber: isTurnOver ? board.turnNumber + 1 : board.turnNumber,
     selectedPieceId: null,
     activeAction: null,
+    lastGoalScorer: undefined,
     commentary,
   };
 }
@@ -804,6 +806,7 @@ export function endTurn(board: BoardState): BoardState {
     turnNumber: board.turnNumber + 1,
     selectedPieceId: null,
     activeAction: null,
+    lastGoalScorer: undefined,
     commentary: [
       {
         id: `c_${Date.now()}`,
