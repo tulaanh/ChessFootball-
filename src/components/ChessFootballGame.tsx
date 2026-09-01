@@ -121,6 +121,13 @@ export default function ChessFootballGame() {
     (window as any).__CHESS_FOOTBALL_BOARD_STATE__ = board;
   }, [board]);
 
+  // When online role is assigned, automatically switch setup team to player's role
+  useEffect(() => {
+    if (multiplayerMode === 'online' && onlineRole) {
+      setSetupTeam(onlineRole);
+    }
+  }, [multiplayerMode, onlineRole]);
+
   // Sync state helper for multiplayer
   const updateAndSyncBoard = (nextBoard: BoardState) => {
     setBoard(nextBoard);
@@ -568,16 +575,24 @@ export default function ChessFootballGame() {
               <div className="flex items-center gap-2">
                 <h3 className="font-extrabold text-lg text-white">{whiteRoster.teamName}</h3>
                 {isSetupPhase && (
-                  <button
-                    onClick={() => isMyTeamInSetup && setSetupTeam('white')}
-                    className={`text-xs px-2.5 py-0.5 rounded-full font-bold border transition-all ${
-                      setupTeam === 'white'
-                        ? 'bg-amber-400 text-black border-amber-300 ring-2 ring-amber-400'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    🛠️ Đang xếp
-                  </button>
+                  multiplayerMode === 'online' ? (
+                    onlineRole === 'white' && (
+                      <span className="text-xs px-2.5 py-0.5 rounded-full font-black bg-amber-400 text-black border border-amber-300 ring-2 ring-amber-400">
+                        🛠️ Đội của bạn
+                      </span>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => setSetupTeam('white')}
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-bold border transition-all ${
+                        setupTeam === 'white'
+                          ? 'bg-amber-400 text-black border-amber-300 ring-2 ring-amber-400'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      🛠️ Đang xếp
+                    </button>
+                  )
                 )}
               </div>
               <p className="text-xs text-slate-400">Tấn công Khung thành Đỏ (ở trên)</p>
@@ -645,16 +660,24 @@ export default function ChessFootballGame() {
             <div className="text-right">
               <div className="flex items-center justify-end gap-2">
                 {isSetupPhase && (
-                  <button
-                    onClick={() => isMyTeamInSetup && setSetupTeam('black')}
-                    className={`text-xs px-2.5 py-0.5 rounded-full font-bold border transition-all ${
-                      setupTeam === 'black'
-                        ? 'bg-red-600 text-white border-red-400 ring-2 ring-red-500'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    🛠️ Đang xếp
-                  </button>
+                  multiplayerMode === 'online' ? (
+                    onlineRole === 'black' && (
+                      <span className="text-xs px-2.5 py-0.5 rounded-full font-black bg-red-600 text-white border border-red-400 ring-2 ring-red-500">
+                        🛠️ Đội của bạn
+                      </span>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => setSetupTeam('black')}
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-bold border transition-all ${
+                        setupTeam === 'black'
+                          ? 'bg-red-600 text-white border-red-400 ring-2 ring-red-500'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      🛠️ Đang xếp
+                    </button>
+                  )
                 )}
                 <h3 className="font-extrabold text-lg text-white">{blackRoster.teamName}</h3>
               </div>
@@ -676,26 +699,34 @@ export default function ChessFootballGame() {
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <h4 className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <span>🛠️</span> XẾP ĐỘI HÌNH & VỊ TRÍ
+                  <span>🛠️</span> XẾP ĐỘI HÌNH
                 </h4>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => isMyTeamInSetup && setSetupTeam('white')}
-                    className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                      setupTeam === 'white' ? 'bg-amber-400 text-black' : 'bg-slate-800 text-slate-300'
-                    }`}
-                  >
-                    Trắng
-                  </button>
-                  <button
-                    onClick={() => isMyTeamInSetup && setSetupTeam('black')}
-                    className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                      setupTeam === 'black' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-300'
-                    }`}
-                  >
-                    Đỏ
-                  </button>
-                </div>
+                {multiplayerMode === 'online' ? (
+                  <span className={`text-xs px-2.5 py-0.5 rounded-lg font-black ${
+                    onlineRole === 'white' ? 'bg-amber-400 text-black' : 'bg-red-600 text-white'
+                  }`}>
+                    {onlineRole === 'white' ? 'Đội Trắng ♔' : 'Đội Đỏ ♚'}
+                  </span>
+                ) : (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setSetupTeam('white')}
+                      className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                        setupTeam === 'white' ? 'bg-amber-400 text-black' : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      Trắng
+                    </button>
+                    <button
+                      onClick={() => setSetupTeam('black')}
+                      className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                        setupTeam === 'black' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      Đỏ
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Team Budget & Stats */}
