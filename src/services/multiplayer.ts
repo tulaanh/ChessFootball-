@@ -1,13 +1,14 @@
-import { Peer, DataConnection } from 'peerjs';
+import mqtt, { MqttClient } from 'mqtt';
 import { BoardState, TeamColor } from '@/engine/types';
 
 export type NetworkPacket =
-  | { type: 'SYNC_STATE'; board: BoardState }
-  | { type: 'EMOTE'; emoji: string; team: TeamColor }
-  | { type: 'RESET_REQUEST' }
-  | { type: 'PING' }
-  | { type: 'PONG' }
-  | { type: 'CHAT'; message: string; team: TeamColor };
+  | { type: 'JOIN_REQUEST'; senderId: string }
+  | { type: 'JOIN_ACCEPT'; hostId: string; board: BoardState }
+  | { type: 'SYNC_STATE'; board: BoardState; senderId: string }
+  | { type: 'EMOTE'; emoji: string; team: TeamColor; senderId: string }
+  | { type: 'RESET_REQUEST'; senderId: string }
+  | { type: 'HEARTBEAT'; senderId: string }
+  | { type: 'LEAVE'; senderId: string };
 
 export interface MultiplayerCallbacks {
   onConnected: (peerId: string, role: TeamColor) => void;
@@ -17,51 +18,79 @@ export interface MultiplayerCallbacks {
   onStatusUpdate?: (status: string) => void;
 }
 
-export const PEER_CONFIG = {
-  debug: 1,
-  config: {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' },
-      { urls: 'stun:stun.cloudflare.com:3478' },
-      { urls: 'stun:stun.services.mozilla.com' },
-      { urls: 'stun:global.stun.twilio.com:3478' },
-      { urls: 'stun:stun.nextcloud.com:443' },
-      // OpenRelay Public TURN / STUN for NAT traversal across different ISPs / 4G
-      {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-    ],
-    iceCandidatePoolSize: 10,
-  },
-};
+// Ultra-reliable public MQTT brokers over Secure WebSocket (WSS)
+const BROKER_URLS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081',
+];
 
 class MultiplayerService {
-  private peer: Peer | null = null;
-  private connection: DataConnection | null = null;
+  private client: MqttClient | null = null;
   private callbacks: MultiplayerCallbacks | null = null;
-  private connectTimeoutTimer: number | null = null;
+  private myClientId: string = '';
+  private topic: string = '';
+  private joinInterval: number | null = null;
+  private isConnectedToPeer: boolean = false;
   public myRole: TeamColor | null = null;
   public roomId: string | null = null;
   public isHost: boolean = false;
 
   public init(callbacks: MultiplayerCallbacks) {
     this.callbacks = callbacks;
+  }
+
+  private connectBroker(brokerIndex = 0, onConnectSuccess: () => void, onError: (err: Error) => void) {
+    if (brokerIndex >= BROKER_URLS.length) {
+      onError(new Error('Không thể kết nối đến tất cả máy chủ đám mây!'));
+      return;
+    }
+
+    const brokerUrl = BROKER_URLS[brokerIndex];
+    this.myClientId = `player_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+
+    if (this.callbacks?.onStatusUpdate) {
+      this.callbacks.onStatusUpdate(`Đang kết nối đám mây (${brokerIndex + 1}/${BROKER_URLS.length})...`);
+    }
+
+    const client = mqtt.connect(brokerUrl, {
+      clientId: this.myClientId,
+      clean: true,
+      connectTimeout: 8000,
+      reconnectPeriod: 3000,
+    });
+
+    let connected = false;
+
+    client.on('connect', () => {
+      connected = true;
+      this.client = client;
+      onConnectSuccess();
+    });
+
+    client.on('error', (err) => {
+      console.warn(`Broker error at ${brokerUrl}:`, err);
+      if (!connected) {
+        client.end(true);
+        // Try next broker
+        this.connectBroker(brokerIndex + 1, onConnectSuccess, onError);
+      }
+    });
+
+    client.on('message', (_topic, message) => {
+      try {
+        const packet = JSON.parse(message.toString()) as NetworkPacket;
+        this.handleIncomingPacket(packet);
+      } catch (e) {
+        console.error('Failed to parse MQTT message:', e);
+      }
+    });
+
+    client.on('close', () => {
+      if (this.isConnectedToPeer && this.callbacks) {
+        this.callbacks.onStatusUpdate?.('Đang tái kết nối đường truyền...');
+      }
+    });
   }
 
   /**
@@ -73,154 +102,159 @@ class MultiplayerService {
     this.myRole = 'white';
 
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const peerId = `cf-${randomSuffix}`;
+    const roomCode = `cf-${randomSuffix}`;
+    this.roomId = roomCode;
+    this.topic = `chessfootball/v1/room/${roomCode}`;
 
-    this.peer = new Peer(peerId, PEER_CONFIG);
-
-    this.peer.on('open', (id) => {
-      this.roomId = id;
-      onRoomCreated(id);
-    });
-
-    this.peer.on('connection', (conn) => {
-      this.connection = conn;
-      this.setupConnectionHandlers(conn, 'white');
-    });
-
-    this.peer.on('error', (err) => {
-      console.error('Peer host error:', err);
-      if (this.callbacks) {
-        this.callbacks.onError(err.message || 'Lỗi khởi tạo phòng');
+    this.connectBroker(
+      0,
+      () => {
+        if (!this.client) return;
+        this.client.subscribe(this.topic, { qos: 1 }, (err) => {
+          if (err) {
+            this.callbacks?.onError('Lỗi đăng ký phòng trên máy chủ!');
+            return;
+          }
+          onRoomCreated(roomCode);
+          this.callbacks?.onStatusUpdate?.('🟢 Phòng đã tạo thành công! Đang chờ đối thủ...');
+        });
+      },
+      (err) => {
+        this.callbacks?.onError(err.message);
       }
-    });
+    );
   }
 
   /**
    * Guest joins an existing room by room code
    */
-  public joinRoom(roomCode: string, onJoined: () => void) {
+  public joinRoom(roomCode: string, onJoined: () => void, initialBoard?: BoardState) {
     this.cleanup();
     this.isHost = false;
     this.myRole = 'black';
-    this.roomId = roomCode.trim().toLowerCase();
+    const cleanRoomCode = roomCode.trim().toLowerCase();
+    this.roomId = cleanRoomCode;
+    this.topic = `chessfootball/v1/room/${cleanRoomCode}`;
 
-    this.peer = new Peer(PEER_CONFIG);
-
-    if (this.callbacks?.onStatusUpdate) {
-      this.callbacks.onStatusUpdate('Đang tìm kiếm máy chủ đối thủ...');
-    }
-
-    this.peer.on('open', () => {
-      if (!this.peer || !this.roomId) return;
-
-      if (this.callbacks?.onStatusUpdate) {
-        this.callbacks.onStatusUpdate('Đang thiết lập cầu nối P2P & STUN/TURN Relay...');
-      }
-
-      const conn = this.peer.connect(this.roomId, {
-        reliable: true,
-      });
-
-      this.connection = conn;
-      this.setupConnectionHandlers(conn, 'black', onJoined);
-
-      // Set timeout for connection
-      if (this.connectTimeoutTimer) clearTimeout(this.connectTimeoutTimer);
-      this.connectTimeoutTimer = window.setTimeout(() => {
-        if (!conn.open) {
-          if (this.callbacks?.onStatusUpdate) {
-            this.callbacks.onStatusUpdate('Đang chuyển hướng qua TURN Relay vượt tường lửa NAT...');
+    this.connectBroker(
+      0,
+      () => {
+        if (!this.client) return;
+        this.client.subscribe(this.topic, { qos: 1 }, (err) => {
+          if (err) {
+            this.callbacks?.onError('Lỗi tham gia phòng!');
+            return;
           }
-        }
-      }, 7000);
-    });
 
-    this.peer.on('error', (err) => {
-      console.error('Peer error on join:', err);
-      if (this.callbacks) {
-        this.callbacks.onError('Không tìm thấy phòng hoặc mã phòng không đúng!');
+          this.callbacks?.onStatusUpdate?.('Đang liên lạc với Chủ phòng...');
+
+          // Send JOIN_REQUEST repeatedly until host responds
+          const sendJoin = () => {
+            this.sendPacket({
+              type: 'JOIN_REQUEST',
+              senderId: this.myClientId,
+            });
+          };
+
+          sendJoin();
+          this.joinInterval = window.setInterval(sendJoin, 1200);
+
+          // Timeout after 15s if no host responds
+          setTimeout(() => {
+            if (!this.isConnectedToPeer && this.joinInterval) {
+              this.callbacks?.onStatusUpdate?.('Chưa thấy phản hồi từ chủ phòng. Đang tiếp tục thử...');
+            }
+          }, 6000);
+        });
+      },
+      (err) => {
+        this.callbacks?.onError(err.message);
       }
-    });
+    );
   }
 
-  private setupConnectionHandlers(conn: DataConnection, role: TeamColor, onReady?: () => void) {
-    const handleOpen = () => {
-      if (this.connectTimeoutTimer) {
-        clearTimeout(this.connectTimeoutTimer);
-        this.connectTimeoutTimer = null;
-      }
-      if (onReady) onReady();
-      if (this.callbacks) {
-        this.callbacks.onConnected(conn.peer, role);
-      }
-      // Send handshake ping
-      conn.send({ type: 'PING' });
-    };
-
-    if (conn.open) {
-      handleOpen();
-    } else {
-      conn.on('open', handleOpen);
+  private handleIncomingPacket(packet: NetworkPacket) {
+    // Ignore packets sent by ourselves
+    if ('senderId' in packet && packet.senderId === this.myClientId) {
+      return;
     }
 
-    conn.on('data', (data) => {
-      try {
-        const packet = data as NetworkPacket;
-        if (packet.type === 'PING') {
-          conn.send({ type: 'PONG' });
-          return;
-        }
-        if (packet.type === 'PONG') {
-          return;
-        }
-        if (this.callbacks) {
-          this.callbacks.onPacketReceived(packet);
-        }
-      } catch (e) {
-        console.error('Failed to parse network packet:', e);
+    if (packet.type === 'JOIN_REQUEST' && this.isHost) {
+      // Host receives join request from guest -> Accept and send current board
+      if (!this.isConnectedToPeer) {
+        this.isConnectedToPeer = true;
+        this.callbacks?.onConnected(this.roomId!, 'white');
       }
-    });
+      this.sendPacket({
+        type: 'JOIN_ACCEPT',
+        hostId: this.myClientId,
+        board: (window as any).__CHESS_FOOTBALL_BOARD_STATE__ || (null as any),
+      });
+      return;
+    }
 
-    conn.on('close', () => {
-      if (this.callbacks) {
-        this.callbacks.onDisconnected();
+    if (packet.type === 'JOIN_ACCEPT' && !this.isHost) {
+      // Guest receives join accept from host
+      if (this.joinInterval) {
+        clearInterval(this.joinInterval);
+        this.joinInterval = null;
       }
-    });
+      if (!this.isConnectedToPeer) {
+        this.isConnectedToPeer = true;
+        this.callbacks?.onConnected(this.roomId!, 'black');
+        if (packet.board) {
+          this.callbacks?.onPacketReceived({
+            type: 'SYNC_STATE',
+            board: packet.board,
+            senderId: packet.hostId,
+          });
+        }
+      }
+      return;
+    }
 
-    conn.on('error', (err) => {
-      console.error('Connection error:', err);
-      if (this.callbacks) {
-        this.callbacks.onError('Lỗi đường truyền mạng');
-      }
-    });
+    if (packet.type === 'LEAVE') {
+      this.callbacks?.onDisconnected();
+      return;
+    }
+
+    if (this.callbacks) {
+      this.callbacks.onPacketReceived(packet);
+    }
   }
 
   public sendPacket(packet: NetworkPacket) {
-    if (this.connection && this.connection.open) {
+    if (this.client && this.client.connected && this.topic) {
       try {
-        this.connection.send(packet);
+        const payload = JSON.stringify(packet);
+        this.client.publish(this.topic, payload, { qos: 1 });
       } catch (e) {
-        console.error('Send packet error:', e);
+        console.error('Failed to send MQTT packet:', e);
       }
     }
   }
 
   public cleanup() {
-    if (this.connectTimeoutTimer) {
-      clearTimeout(this.connectTimeoutTimer);
-      this.connectTimeoutTimer = null;
+    if (this.joinInterval) {
+      clearInterval(this.joinInterval);
+      this.joinInterval = null;
     }
-    if (this.connection) {
-      this.connection.close();
-      this.connection = null;
+    if (this.client) {
+      try {
+        if (this.isConnectedToPeer && this.topic) {
+          this.sendPacket({ type: 'LEAVE', senderId: this.myClientId });
+        }
+        this.client.end(true);
+      } catch (e) {
+        // ignore
+      }
+      this.client = null;
     }
-    if (this.peer) {
-      this.peer.destroy();
-      this.peer = null;
-    }
+    this.isConnectedToPeer = false;
     this.roomId = null;
     this.myRole = null;
     this.isHost = false;
+    this.topic = '';
   }
 }
 

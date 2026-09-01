@@ -9,8 +9,8 @@
   <!-- React & ReactDOM CDN -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- PeerJS CDN for WebRTC Online Multiplayer -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- MQTT WebSocket CDN for Guaranteed Cross-Network Multiplayer -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <!-- Babel Standalone CDN -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
@@ -299,41 +299,12 @@
       return kicks;
     }
 
-    const PEER_CONFIG = {
-      debug: 1,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' },
-          { urls: 'stun:stun.services.mozilla.com' },
-          { urls: 'stun:global.stun.twilio.com:3478' },
-          { urls: 'stun:stun.nextcloud.com:443' },
-          {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
-        ],
-        iceCandidatePoolSize: 10,
-      },
-    };
-
-    let peerInstance = null;
-    let peerConn = null;
+    const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+    let mqttClient = null;
+    let mqttClientId = '';
+    let currentTopic = '';
+    let isConnectedToPeer = false;
+    let joinIntervalId = null;
 
     function App() {
       const [board, setBoard] = useState(createInitialBoard);
@@ -363,11 +334,22 @@
       const isMyTurnInOnline = multiplayerMode === 'local' || onlineRole === board.currentTurn;
       const isMyTeamInSetup = multiplayerMode === 'local' || onlineRole === setupTeam;
 
-      // Broadcast state helper
+      // Keep latest board state accessible
+      useEffect(() => {
+        window.__STANDALONE_BOARD__ = board;
+      }, [board]);
+
+      const sendMqttPacket = (packet) => {
+        if (mqttClient && mqttClient.connected && currentTopic) {
+          mqttClient.publish(currentTopic, JSON.stringify(packet), { qos: 1 });
+        }
+      };
+
       const updateAndSyncBoard = (nextBoard) => {
         setBoard(nextBoard);
-        if (multiplayerMode === 'online' && peerConn && peerConn.open) {
-          peerConn.send({ type: 'SYNC_STATE', board: nextBoard });
+        window.__STANDALONE_BOARD__ = nextBoard;
+        if (multiplayerMode === 'online') {
+          sendMqttPacket({ type: 'SYNC_STATE', board: nextBoard, senderId: mqttClientId });
         }
       };
 
@@ -379,94 +361,154 @@
           setFloatingEmotes(prev => prev.filter(e => e.id !== newEmote.id));
         }, 3000);
 
-        if (multiplayerMode === 'online' && peerConn && peerConn.open) {
-          peerConn.send({ type: 'EMOTE', emoji, team: myTeam });
+        if (multiplayerMode === 'online') {
+          sendMqttPacket({ type: 'EMOTE', emoji, team: myTeam, senderId: mqttClientId });
         }
       };
 
-      const setupConn = (conn, role, roomId) => {
-        peerConn = conn;
-        const handleOpen = () => {
-          setMultiplayerMode('online');
-          setOnlineRole(role);
-          setOnlineRoomId(roomId);
-          setIsOnlineModalOpen(false);
-          if (role === 'white') {
-            conn.send({ type: 'SYNC_STATE', board });
-          }
-          conn.send({ type: 'PING' });
-        };
-
-        if (conn.open) {
-          handleOpen();
-        } else {
-          conn.on('open', handleOpen);
+      const cleanupMqtt = () => {
+        if (joinIntervalId) {
+          clearInterval(joinIntervalId);
+          joinIntervalId = null;
         }
-
-        conn.on('data', (data) => {
-          if (data.type === 'PING') {
-            conn.send({ type: 'PONG' });
-            return;
-          }
-          if (data.type === 'PONG') return;
-          if (data.type === 'SYNC_STATE') {
-            setBoard(data.board);
-          } else if (data.type === 'EMOTE') {
-            const em = { id: String(Date.now()), emoji: data.emoji, team: data.team };
-            setFloatingEmotes(prev => [...prev, em]);
-            setTimeout(() => {
-              setFloatingEmotes(prev => prev.filter(e => e.id !== em.id));
-            }, 3000);
-          }
-        });
-        conn.on('close', () => {
-          alert('Đối thủ đã ngắt kết nối!');
-          setMultiplayerMode('local');
-          setOnlineRole(null);
-          setOnlineRoomId(null);
-        });
-        conn.on('error', (err) => {
-          setOnlineStatusText('Lỗi kết nối mạng: ' + err.message);
-        });
+        if (mqttClient) {
+          try {
+            if (isConnectedToPeer && currentTopic) {
+              sendMqttPacket({ type: 'LEAVE', senderId: mqttClientId });
+            }
+            mqttClient.end(true);
+          } catch(e) {}
+          mqttClient = null;
+        }
+        isConnectedToPeer = false;
+        currentTopic = '';
       };
 
       const handleCreateOnlineRoom = () => {
-        setOnlineStatusText('Đang khởi tạo máy chủ phòng qua STUN/TURN...');
+        cleanupMqtt();
+        setOnlineStatusText('Đang kết nối máy chủ đám mây EMQX...');
         const randomSuffix = Math.floor(100000 + Math.random() * 900000);
         const roomId = `cf-${randomSuffix}`;
+        currentTopic = `chessfootball/v1/room/${roomId}`;
+        mqttClientId = `host_${Math.random().toString(36).substring(2, 9)}`;
 
-        if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer(roomId, PEER_CONFIG);
-
-        peerInstance.on('open', (id) => {
-          setCreatedRoomCode(id);
-          setOnlineStatusText('🟢 Phòng đã sẵn sàng! Đang chờ đối thủ tham gia...');
+        const client = mqtt.connect(MQTT_BROKER, {
+          clientId: mqttClientId,
+          clean: true,
+          connectTimeout: 8000,
         });
 
-        peerInstance.on('connection', (conn) => {
-          setupConn(conn, 'white', roomId);
+        client.on('connect', () => {
+          mqttClient = client;
+          client.subscribe(currentTopic, { qos: 1 }, (err) => {
+            if (err) return setOnlineStatusText('Lỗi tạo phòng!');
+            setCreatedRoomCode(roomId);
+            setOnlineStatusText('🟢 Phòng đã sẵn sàng! Đang chờ đối thủ tham gia...');
+          });
         });
 
-        peerInstance.on('error', (err) => {
-          setOnlineStatusText('Lỗi kết nối phòng: ' + err.message);
+        client.on('message', (_t, msg) => {
+          try {
+            const data = JSON.parse(msg.toString());
+            if (data.senderId === mqttClientId) return;
+
+            if (data.type === 'JOIN_REQUEST') {
+              if (!isConnectedToPeer) {
+                isConnectedToPeer = true;
+                setMultiplayerMode('online');
+                setOnlineRole('white');
+                setOnlineRoomId(roomId);
+                setIsOnlineModalOpen(false);
+              }
+              sendMqttPacket({
+                type: 'JOIN_ACCEPT',
+                hostId: mqttClientId,
+                board: window.__STANDALONE_BOARD__ || board
+              });
+            } else if (data.type === 'SYNC_STATE') {
+              setBoard(data.board);
+            } else if (data.type === 'EMOTE') {
+              const em = { id: String(Date.now()), emoji: data.emoji, team: data.team };
+              setFloatingEmotes(prev => [...prev, em]);
+              setTimeout(() => setFloatingEmotes(prev => prev.filter(e => e.id !== em.id)), 3000);
+            } else if (data.type === 'LEAVE') {
+              alert('Đối thủ đã rời khỏi phòng!');
+              setMultiplayerMode('local');
+              setOnlineRole(null);
+              setOnlineRoomId(null);
+            }
+          } catch(e) {}
+        });
+
+        client.on('error', (err) => {
+          setOnlineStatusText('Lỗi kết nối máy chủ: ' + err.message);
         });
       };
 
       const handleJoinOnlineRoom = () => {
         if (!joinCodeInput.trim()) return alert('Vui lòng nhập mã phòng!');
-        setOnlineStatusText('Đang kết nối qua STUN/TURN Relay...');
-        const targetRoom = joinCodeInput.trim().toLowerCase();
+        cleanupMqtt();
+        const cleanRoom = joinCodeInput.trim().toLowerCase();
+        currentTopic = `chessfootball/v1/room/${cleanRoom}`;
+        mqttClientId = `guest_${Math.random().toString(36).substring(2, 9)}`;
+        setOnlineStatusText('Đang liên lạc với máy chủ và tìm chủ phòng...');
 
-        if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer(PEER_CONFIG);
-
-        peerInstance.on('open', () => {
-          const conn = peerInstance.connect(targetRoom, { reliable: true });
-          setupConn(conn, 'black', targetRoom);
+        const client = mqtt.connect(MQTT_BROKER, {
+          clientId: mqttClientId,
+          clean: true,
+          connectTimeout: 8000,
         });
 
-        peerInstance.on('error', (err) => {
-          setOnlineStatusText('Không tìm thấy phòng hoặc lỗi kết nối!');
+        client.on('connect', () => {
+          mqttClient = client;
+          client.subscribe(currentTopic, { qos: 1 }, (err) => {
+            if (err) return setOnlineStatusText('Lỗi vào phòng!');
+
+            const sendReq = () => {
+              sendMqttPacket({ type: 'JOIN_REQUEST', senderId: mqttClientId });
+            };
+            sendReq();
+            joinIntervalId = setInterval(sendReq, 1000);
+          });
+        });
+
+        client.on('message', (_t, msg) => {
+          try {
+            const data = JSON.parse(msg.toString());
+            if (data.senderId === mqttClientId) return;
+
+            if (data.type === 'JOIN_ACCEPT') {
+              if (joinIntervalId) {
+                clearInterval(joinIntervalId);
+                joinIntervalId = null;
+              }
+              if (!isConnectedToPeer) {
+                isConnectedToPeer = true;
+                setMultiplayerMode('online');
+                setOnlineRole('black');
+                setOnlineRoomId(cleanRoom);
+                setIsOnlineModalOpen(false);
+                if (data.board) {
+                  setBoard(data.board);
+                }
+              }
+            } else if (data.type === 'SYNC_STATE') {
+              setBoard(data.board);
+            } else if (data.type === 'EMOTE') {
+              const em = { id: String(Date.now()), emoji: data.emoji, team: data.team };
+              setFloatingEmotes(prev => [...prev, em]);
+              setTimeout(() => setFloatingEmotes(prev => prev.filter(e => e.id !== em.id)), 3000);
+            } else if (data.type === 'LEAVE') {
+              alert('Chủ phòng đã rời khỏi phòng đấu!');
+              setMultiplayerMode('local');
+              setOnlineRole(null);
+              setOnlineRoomId(null);
+            }
+          } catch(e) {}
+        });
+
+        client.on('error', (err) => {
+          setOnlineStatusText('Lỗi kết nối: ' + err.message);
         });
       };
 

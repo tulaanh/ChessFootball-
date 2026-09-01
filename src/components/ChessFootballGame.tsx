@@ -67,7 +67,7 @@ export default function ChessFootballGame() {
         setIsOnlineModalOpen(false);
         if (role === 'white') {
           // Host syncs initial state to guest
-          multiplayerService.sendPacket({ type: 'SYNC_STATE', board });
+          multiplayerService.sendPacket({ type: 'SYNC_STATE', board, senderId: '' });
         }
       },
       onDisconnected: () => {
@@ -109,11 +109,17 @@ export default function ChessFootballGame() {
     };
   }, []);
 
+  // Keep board in window global for host join replies
+  useEffect(() => {
+    (window as any).__CHESS_FOOTBALL_BOARD_STATE__ = board;
+  }, [board]);
+
   // Sync state helper for multiplayer
   const updateAndSyncBoard = (nextBoard: BoardState) => {
     setBoard(nextBoard);
+    (window as any).__CHESS_FOOTBALL_BOARD_STATE__ = nextBoard;
     if (multiplayerMode === 'online') {
-      multiplayerService.sendPacket({ type: 'SYNC_STATE', board: nextBoard });
+      multiplayerService.sendPacket({ type: 'SYNC_STATE', board: nextBoard, senderId: '' });
     }
   };
 
@@ -126,7 +132,7 @@ export default function ChessFootballGame() {
     }, 3000);
 
     if (multiplayerMode === 'online') {
-      multiplayerService.sendPacket({ type: 'EMOTE', emoji, team: myTeam });
+      multiplayerService.sendPacket({ type: 'EMOTE', emoji, team: myTeam, senderId: '' });
     }
   };
 
