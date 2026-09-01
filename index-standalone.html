@@ -299,6 +299,39 @@
       return kicks;
     }
 
+    const PEER_CONFIG = {
+      debug: 1,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+          { urls: 'stun:stun.services.mozilla.com' },
+          { urls: 'stun:global.stun.twilio.com:3478' },
+          { urls: 'stun:stun.nextcloud.com:443' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+        ],
+        iceCandidatePoolSize: 10,
+      },
+    };
+
     let peerInstance = null;
     let peerConn = null;
 
@@ -353,7 +386,7 @@
 
       const setupConn = (conn, role, roomId) => {
         peerConn = conn;
-        conn.on('open', () => {
+        const handleOpen = () => {
           setMultiplayerMode('online');
           setOnlineRole(role);
           setOnlineRoomId(roomId);
@@ -361,8 +394,21 @@
           if (role === 'white') {
             conn.send({ type: 'SYNC_STATE', board });
           }
-        });
+          conn.send({ type: 'PING' });
+        };
+
+        if (conn.open) {
+          handleOpen();
+        } else {
+          conn.on('open', handleOpen);
+        }
+
         conn.on('data', (data) => {
+          if (data.type === 'PING') {
+            conn.send({ type: 'PONG' });
+            return;
+          }
+          if (data.type === 'PONG') return;
           if (data.type === 'SYNC_STATE') {
             setBoard(data.board);
           } else if (data.type === 'EMOTE') {
@@ -379,15 +425,18 @@
           setOnlineRole(null);
           setOnlineRoomId(null);
         });
+        conn.on('error', (err) => {
+          setOnlineStatusText('Lỗi kết nối mạng: ' + err.message);
+        });
       };
 
       const handleCreateOnlineRoom = () => {
-        setOnlineStatusText('Đang khởi tạo máy chủ phòng...');
+        setOnlineStatusText('Đang khởi tạo máy chủ phòng qua STUN/TURN...');
         const randomSuffix = Math.floor(100000 + Math.random() * 900000);
         const roomId = `cf-${randomSuffix}`;
 
         if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer(roomId);
+        peerInstance = new Peer(roomId, PEER_CONFIG);
 
         peerInstance.on('open', (id) => {
           setCreatedRoomCode(id);
@@ -405,11 +454,11 @@
 
       const handleJoinOnlineRoom = () => {
         if (!joinCodeInput.trim()) return alert('Vui lòng nhập mã phòng!');
-        setOnlineStatusText('Đang kết nối vào phòng...');
+        setOnlineStatusText('Đang kết nối qua STUN/TURN Relay...');
         const targetRoom = joinCodeInput.trim().toLowerCase();
 
         if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer();
+        peerInstance = new Peer(PEER_CONFIG);
 
         peerInstance.on('open', () => {
           const conn = peerInstance.connect(targetRoom, { reliable: true });
