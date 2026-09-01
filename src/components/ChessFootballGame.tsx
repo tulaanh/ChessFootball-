@@ -433,9 +433,18 @@ export default function ChessFootballGame() {
       return;
     }
 
+    const savedFormation = board.pieces.map((p) => ({
+      ...p,
+      position: { ...p.position },
+      isStunned: false,
+      abilityCooldown: 0,
+    }));
+
     const nextBoard: BoardState = {
       ...board,
       phase: 'playing',
+      savedFormation,
+      pieces: savedFormation,
       currentTurn: 'white',
       remainingAP: 2,
       selectedPieceId: null,

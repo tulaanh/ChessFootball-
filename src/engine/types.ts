@@ -79,6 +79,7 @@ export interface BoardState {
   activeAction: 'move' | 'kick' | null;
   winner: TeamColor | null;
   lastGoalScorer?: { team: TeamColor; pieceName: string };
+  savedFormation?: PieceInstance[];
   commentary: CommentaryLog[];
   whiteRoster: TeamRoster;
   blackRoster: TeamRoster;

@@ -642,10 +642,18 @@
             setGoalAlert({ team: selectedPiece.team, name: getPieceDefinition(selectedPiece.typeId).vietnameseName });
             setTimeout(() => setGoalAlert(null), 3000);
 
+            const resetPieces = (board.savedFormation || board.pieces).map(p => ({ ...p, position: { ...p.position }, isStunned: false, abilityCooldown: 0 }));
+            const concedingTeam = selectedPiece.team === 'white' ? 'black' : 'white';
+
             updateAndSyncBoard({
-              ...createInitialBoard(),
+              ...board,
+              pieces: resetPieces,
+              ballPosition: { x: 5, y: 7 },
               remainingAP: 2,
+              currentTurn: concedingTeam,
               score: newScore,
+              selectedPieceId: null,
+              activeAction: null,
               winner: newScore[selectedPiece.team] >= 2 ? selectedPiece.team : null,
               commentary: [{ id: String(Date.now()), text: `⚽ VÀOOOOOO! [${selectedPiece.team === 'white' ? 'Đội Trắng' : 'Đội Đỏ'}] ${getPieceDefinition(selectedPiece.typeId).vietnameseName} solo dẫn bóng dắt bóng thẳng vào lưới!`, timestamp: 'GOAL' }, ...board.commentary]
             });
@@ -749,10 +757,18 @@
             setGoalAlert({ team: selectedPiece.team, name: getPieceDefinition(selectedPiece.typeId).vietnameseName });
             setTimeout(() => setGoalAlert(null), 3000);
 
+            const resetPieces = (board.savedFormation || board.pieces).map(p => ({ ...p, position: { ...p.position }, isStunned: false, abilityCooldown: 0 }));
+            const concedingTeam = selectedPiece.team === 'white' ? 'black' : 'white';
+
             updateAndSyncBoard({
-              ...createInitialBoard(),
+              ...board,
+              pieces: resetPieces,
+              ballPosition: { x: 5, y: 7 },
               remainingAP: 2,
+              currentTurn: concedingTeam,
               score: newScore,
+              selectedPieceId: null,
+              activeAction: null,
               winner: newScore[selectedPiece.team] >= 2 ? selectedPiece.team : null,
               commentary: [{ id: String(Date.now()), text: `⚽ VÀOOOOOO! Bàn thắng tuyệt đẹp cho ${selectedPiece.team === 'white' ? 'Đội Trắng' : 'Đội Đỏ'}!`, timestamp: 'GOAL' }, ...board.commentary]
             });
@@ -846,9 +862,19 @@
           alert('Mỗi đội cần có tối thiểu 5 cầu thủ!');
           return;
         }
+
+        const savedFormation = board.pieces.map(p => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }));
+
         updateAndSyncBoard({
           ...board,
           phase: 'playing',
+          savedFormation,
+          pieces: savedFormation,
           currentTurn: 'white',
           remainingAP: 2,
           selectedPieceId: null,

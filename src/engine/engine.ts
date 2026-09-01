@@ -487,26 +487,20 @@ export function executeMove(
 
     const isMatchWon = newScore[piece.team] >= board.targetScore;
 
-    // Reset ball to center & reset pieces
-    const resetPieces: PieceInstance[] = [];
-    board.whiteRoster.pieces.forEach((tId, idx) => {
-      resetPieces.push({
-        id: `w_${idx}_${tId}`,
-        typeId: tId,
-        team: 'white',
-        position: { ...INITIAL_POSITIONS_WHITE[idx] },
-        formationIndex: idx,
-      });
-    });
-    board.blackRoster.pieces.forEach((tId, idx) => {
-      resetPieces.push({
-        id: `b_${idx}_${tId}`,
-        typeId: tId,
-        team: 'black',
-        position: { ...INITIAL_POSITIONS_BLACK[idx] },
-        formationIndex: idx,
-      });
-    });
+    // Reset ball to center & reset pieces back to customized setup formation
+    const resetPieces: PieceInstance[] = board.savedFormation
+      ? board.savedFormation.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }))
+      : board.pieces.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }));
 
     const concedingTeam: TeamColor = piece.team === 'white' ? 'black' : 'white';
 
@@ -662,26 +656,20 @@ export function executeKick(
 
     const isMatchWon = newScore[piece.team] >= board.targetScore;
 
-    // Reset ball to center & reset pieces
-    const resetPieces: PieceInstance[] = [];
-    board.whiteRoster.pieces.forEach((tId, idx) => {
-      resetPieces.push({
-        id: `w_${idx}_${tId}`,
-        typeId: tId,
-        team: 'white',
-        position: { ...INITIAL_POSITIONS_WHITE[idx] },
-        formationIndex: idx,
-      });
-    });
-    board.blackRoster.pieces.forEach((tId, idx) => {
-      resetPieces.push({
-        id: `b_${idx}_${tId}`,
-        typeId: tId,
-        team: 'black',
-        position: { ...INITIAL_POSITIONS_BLACK[idx] },
-        formationIndex: idx,
-      });
-    });
+    // Reset ball to center & reset pieces back to customized setup formation
+    const resetPieces: PieceInstance[] = board.savedFormation
+      ? board.savedFormation.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }))
+      : board.pieces.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }));
 
     const concedingTeam: TeamColor = piece.team === 'white' ? 'black' : 'white';
 
