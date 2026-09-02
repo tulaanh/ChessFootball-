@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   BoardState,
-  PieceInstance,
   Position,
   TeamColor,
   TeamRoster,
@@ -15,7 +14,7 @@ import {
   getPieceDefinition,
 } from '@/engine/piece-registry';
 import { multiplayerService, NetworkPacket } from '@/services/multiplayer';
-import PitchBoard from './PitchBoard';
+import HalfPitchBoard from './HalfPitchBoard';
 import TeamPanel from './TeamPanel';
 import PieceRegistryModal from './PieceRegistryModal';
 
@@ -43,14 +42,13 @@ export default function TacticalSetup({
   const [board, setBoard] = useState<BoardState>(() =>
     createInitialBoard(initialWhiteRoster, initialBlackRoster)
   );
-  const [setupTeam, setSetupTeam] = useState<TeamColor>(() =>
-    multiplayerMode === 'online' && onlineRole ? onlineRole : 'white'
-  );
+
+  const [whiteReady, setWhiteReady] = useState(false);
+  const [blackReady, setBlackReady] = useState(false);
+
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
-  const isMyTeamInSetup = multiplayerMode === 'local' || onlineRole === setupTeam;
-
-  // Lắng nghe online sync nếu đang ở phòng online
+  // Online synchronization
   useEffect(() => {
     if (multiplayerMode === 'online') {
       multiplayerService.init({
@@ -64,6 +62,12 @@ export default function TacticalSetup({
             setBoard(packet.board);
             if (packet.board.whiteRoster) setWhiteRoster(packet.board.whiteRoster);
             if (packet.board.blackRoster) setBlackRoster(packet.board.blackRoster);
+          } else if (packet.type === 'EMOTE' && packet.emoji === 'READY') {
+            if (packet.team === 'white') setWhiteReady(true);
+            if (packet.team === 'black') setBlackReady(true);
+          } else if (packet.type === 'EMOTE' && packet.emoji === 'UNREADY') {
+            if (packet.team === 'white') setWhiteReady(false);
+            if (packet.team === 'black') setBlackReady(false);
           }
         },
         onError: (err: string) => {
@@ -86,10 +90,9 @@ export default function TacticalSetup({
     }
   };
 
-  // Cập nhật pieces trên sân khi roster thay đổi
+  // Update pieces on roster changes
   const handleWhiteRosterChange = (newRoster: TeamRoster) => {
     setWhiteRoster(newRoster);
-    // Cập nhật typeId của các quân cờ đội trắng tương ứng
     const updatedPieces = board.pieces.map((p) => {
       if (p.team === 'white' && p.formationIndex < newRoster.pieces.length) {
         return {
@@ -118,10 +121,12 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
-  // Áp dụng sơ đồ đội hình (4-4-2, 4-3-3, 3-5-2)
+  // Preset formations
   const handleApplyPreset = (teamColor: TeamColor, preset: '4-4-2' | '4-3-3' | '3-5-2') => {
-    if (multiplayerMode === 'online' && onlineRole !== teamColor) return;
     const isWhite = teamColor === 'white';
+    if (isWhite && whiteReady) return;
+    if (!isWhite && blackReady) return;
+
     let positions: Position[] = [];
 
     if (preset === '4-4-2') {
@@ -183,25 +188,19 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
-  // Tương tác trực tiếp trên sân cờ để hoán đổi vị trí
+  // Piece swap / move interaction on half pitches
   const selectedPiece = board.pieces.find((p) => p.id === board.selectedPieceId);
 
-  const handleSelectPiece = (pieceId: string) => {
-    if (!isMyTeamInSetup) return;
+  const handleSelectPiece = (teamColor: TeamColor, pieceId: string) => {
+    if (teamColor === 'white' && whiteReady) return;
+    if (teamColor === 'black' && blackReady) return;
+    if (multiplayerMode === 'online' && onlineRole !== teamColor) return;
+
     const piece = board.pieces.find((p) => p.id === pieceId);
-    if (!piece) return;
+    if (!piece || piece.team !== teamColor) return;
 
-    // Nếu bấm vào quân đội khác và đang chơi Local, tự đổi setupTeam
-    if (piece.team !== setupTeam) {
-      if (multiplayerMode === 'local') {
-        setSetupTeam(piece.team);
-        setBoard((prev) => ({ ...prev, selectedPieceId: pieceId }));
-      }
-      return;
-    }
-
-    // Nếu đã chọn 1 quân trước đó của cùng đội -> hoán đổi vị trí
-    if (selectedPiece && selectedPiece.id !== pieceId && selectedPiece.team === setupTeam) {
+    // Swap positions if another piece of the same team was already selected
+    if (selectedPiece && selectedPiece.id !== pieceId && selectedPiece.team === teamColor) {
       const p1Pos = { ...selectedPiece.position };
       const p2Pos = { ...piece.position };
       const nextBoard: BoardState = {
@@ -223,22 +222,25 @@ export default function TacticalSetup({
     }));
   };
 
-  const handleCellClick = (x: number, y: number) => {
-    if (!isMyTeamInSetup) return;
-    const isWhite = setupTeam === 'white';
+  const handleCellClick = (teamColor: TeamColor, x: number, y: number) => {
+    if (teamColor === 'white' && whiteReady) return;
+    if (teamColor === 'black' && blackReady) return;
+    if (multiplayerMode === 'online' && onlineRole !== teamColor) return;
+
+    const isWhite = teamColor === 'white';
     const isInHalf = isWhite ? y >= 8 && y <= 13 : y >= 1 && y <= 6;
     if (!isInHalf) return;
 
     const existingPiece = board.pieces.find(
-      (p) => p.position.x === x && p.position.y === y
+      (p) => p.position.x === x && p.position.y === y && p.team === teamColor
     );
 
     if (existingPiece) {
-      handleSelectPiece(existingPiece.id);
+      handleSelectPiece(teamColor, existingPiece.id);
       return;
     }
 
-    if (selectedPiece && selectedPiece.team === setupTeam) {
+    if (selectedPiece && selectedPiece.team === teamColor) {
       const nextBoard: BoardState = {
         ...board,
         pieces: board.pieces.map((p) =>
@@ -250,8 +252,50 @@ export default function TacticalSetup({
     }
   };
 
-  // Bắt đầu trận đấu sau khi kiểm tra hợp lệ
+  // Toggle ready status
+  const handleToggleReady = (teamColor: TeamColor) => {
+    if (teamColor === 'white') {
+      const whiteCost = whiteRoster.pieces.reduce((sum, id) => sum + (getPieceDefinition(id)?.cost || 0), 0);
+      if (whiteCost > 150) {
+        alert('Đội Trắng vượt quá quỹ lương 150 điểm!');
+        return;
+      }
+      const newReady = !whiteReady;
+      setWhiteReady(newReady);
+      if (multiplayerMode === 'online') {
+        multiplayerService.sendPacket({
+          type: 'EMOTE',
+          emoji: newReady ? 'READY' : 'UNREADY',
+          team: 'white',
+          senderId: '',
+        });
+      }
+    } else {
+      const blackCost = blackRoster.pieces.reduce((sum, id) => sum + (getPieceDefinition(id)?.cost || 0), 0);
+      if (blackCost > 150) {
+        alert('Đội Đỏ vượt quá quỹ lương 150 điểm!');
+        return;
+      }
+      const newReady = !blackReady;
+      setBlackReady(newReady);
+      if (multiplayerMode === 'online') {
+        multiplayerService.sendPacket({
+          type: 'EMOTE',
+          emoji: newReady ? 'READY' : 'UNREADY',
+          team: 'black',
+          senderId: '',
+        });
+      }
+    }
+  };
+
+  // Start match when BOTH teams are ready
   const handleStartGame = () => {
+    if (!whiteReady || !blackReady) {
+      alert('Cả 2 đội đều phải xác nhận Sẵn Sàng (✓) trước khi bắt đầu!');
+      return;
+    }
+
     const whitePieces = board.pieces.filter((p) => p.team === 'white');
     const blackPieces = board.pieces.filter((p) => p.team === 'black');
 
@@ -260,14 +304,6 @@ export default function TacticalSetup({
 
     if (whiteKings < 1 || blackKings < 1) {
       alert('Cả 2 đội đều phải có ít nhất 1 Thủ Môn (Vua)!');
-      return;
-    }
-
-    // Kiểm tra lương
-    const whiteCost = whiteRoster.pieces.reduce((sum, id) => sum + (getPieceDefinition(id)?.cost || 0), 0);
-    const blackCost = blackRoster.pieces.reduce((sum, id) => sum + (getPieceDefinition(id)?.cost || 0), 0);
-    if (whiteCost > 150 || blackCost > 150) {
-      alert('Có đội vượt quá ngân sách 150 điểm! Vui lòng điều chỉnh lại.');
       return;
     }
 
@@ -310,10 +346,10 @@ export default function TacticalSetup({
     onStartMatch(nextBoard, whiteRoster, blackRoster);
   };
 
-  // Tính valid targets khi đang chọn quân trên sân
+  // Calculate targets for visual guidance
   const validTargets: Position[] = [];
-  if (selectedPiece && selectedPiece.team === setupTeam && isMyTeamInSetup) {
-    const isWhite = setupTeam === 'white';
+  if (selectedPiece) {
+    const isWhite = selectedPiece.team === 'white';
     const minY = isWhite ? 8 : 1;
     const maxY = isWhite ? 13 : 6;
     for (let y = minY; y <= maxY; y++) {
@@ -323,9 +359,11 @@ export default function TacticalSetup({
     }
   }
 
+  const bothReady = whiteReady && blackReady;
+
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col items-center py-2 px-2 sm:px-4 text-slate-100">
-      {/* Top Navigation Bar */}
+      {/* Top Header */}
       <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
         <div className="flex items-center gap-3">
           <button
@@ -335,23 +373,20 @@ export default function TacticalSetup({
             <span>←</span> Menu Chính
           </button>
           <div className="h-5 w-[1px] bg-slate-700 hidden sm:block" />
-          <div>
-            <h2 className="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 flex items-center gap-2">
-              <span>📋</span> BỐ TRÍ CHIẾN THUẬT (TACTICAL SETUP)
-            </h2>
-          </div>
+          <h2 className="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 flex items-center gap-2">
+            <span>📋</span> BỐ TRÍ CHIẾN THUẬT (FOOTBALL MANAGER STYLE)
+          </h2>
         </div>
 
-        {/* Status / Mode info */}
         <div className="flex items-center gap-2">
           {multiplayerMode === 'online' ? (
             <span className="text-xs bg-emerald-950 text-emerald-400 font-bold px-3 py-1 rounded-full border border-emerald-700 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              Online (Phòng: {onlineRoomId}) • Bạn là Đội {onlineRole === 'white' ? 'Trắng ♔' : 'Đỏ ♚'}
+              Online: {onlineRoomId} • Bạn là Đội {onlineRole === 'white' ? 'Trắng ♔' : 'Đỏ ♚'}
             </span>
           ) : (
             <span className="text-xs bg-slate-800 text-slate-300 font-medium px-3 py-1 rounded-full border border-slate-700">
-              🎮 Chế độ 2 Người Chơi Cùng Máy (Local)
+              🎮 2 Người Cùng Máy (Local)
             </span>
           )}
 
@@ -364,107 +399,104 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main 3-Column FM Tactical Layout */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 items-start mb-4">
-        {/* Left Column: White Team Panel (approx 3.5 cols) */}
-        <div className="lg:col-span-3 xl:col-span-3">
-          <TeamPanel
-            team="white"
-            roster={whiteRoster}
-            onRosterChange={handleWhiteRosterChange}
-            onApplyPresetFormation={(preset) => handleApplyPreset('white', preset)}
-            isActiveTeam={setupTeam === 'white'}
-            onSelectAsActive={() => {
-              if (multiplayerMode === 'local' || onlineRole === 'white') {
-                setSetupTeam('white');
-              }
-            }}
-            readOnly={multiplayerMode === 'online' && onlineRole !== 'white'}
-          />
-        </div>
-
-        {/* Center Column: Interactive Pitch Board (approx 6 cols) */}
-        <div className="lg:col-span-6 xl:col-span-6 flex flex-col items-center">
-          {/* Pitch Control Banner */}
-          <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 mb-2 flex items-center justify-between shadow">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium">Đang chỉnh sửa sân:</span>
-              <div className="flex gap-1">
-                <button
-                  disabled={multiplayerMode === 'online' && onlineRole !== 'white'}
-                  onClick={() => setSetupTeam('white')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${
-                    setupTeam === 'white'
-                      ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-300'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Đội Trắng ♔
-                </button>
-                <button
-                  disabled={multiplayerMode === 'online' && onlineRole !== 'black'}
-                  onClick={() => setSetupTeam('black')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${
-                    setupTeam === 'black'
-                      ? 'bg-red-600 text-white shadow-md ring-2 ring-red-400'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Đội Đỏ ♚
-                </button>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-amber-300/80 font-medium hidden sm:block">
-              👉 Nhấp quân để chọn, nhấp ô trống để dời hoặc quân khác để hoán đổi
-            </p>
+      {/* TOP HALF: TEAM BLACK (RED) */}
+      <div className="w-full bg-slate-950/80 border border-red-500/30 rounded-3xl p-3 sm:p-4 mb-4 shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          {/* Left Column: Black Team Panel */}
+          <div className="lg:col-span-6">
+            <TeamPanel
+              team="black"
+              roster={blackRoster}
+              onRosterChange={handleBlackRosterChange}
+              onApplyPresetFormation={(preset) => handleApplyPreset('black', preset)}
+              isReady={blackReady}
+              onToggleReady={() => handleToggleReady('black')}
+              readOnly={multiplayerMode === 'online' && onlineRole !== 'black'}
+            />
           </div>
 
-          <PitchBoard
-            board={board}
-            validTargets={validTargets}
-            onSelectPiece={handleSelectPiece}
-            onCellClick={handleCellClick}
-            isSetupMode={true}
-            setupTeam={setupTeam}
-          />
-        </div>
-
-        {/* Right Column: Black Team Panel (approx 3.5 cols) */}
-        <div className="lg:col-span-3 xl:col-span-3">
-          <TeamPanel
-            team="black"
-            roster={blackRoster}
-            onRosterChange={handleBlackRosterChange}
-            onApplyPresetFormation={(preset) => handleApplyPreset('black', preset)}
-            isActiveTeam={setupTeam === 'black'}
-            onSelectAsActive={() => {
-              if (multiplayerMode === 'local' || onlineRole === 'black') {
-                setSetupTeam('black');
-              }
-            }}
-            readOnly={multiplayerMode === 'online' && onlineRole !== 'black'}
-          />
+          {/* Right Column: Black Team Half Pitch */}
+          <div className="lg:col-span-6 flex justify-center">
+            <HalfPitchBoard
+              team="black"
+              board={board}
+              validTargets={selectedPiece?.team === 'black' ? validTargets : []}
+              onSelectPiece={(id) => handleSelectPiece('black', id)}
+              onCellClick={(x, y) => handleCellClick('black', x, y)}
+              isReady={blackReady}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Bottom Sticky Action Bar */}
-      <div className="w-full max-w-2xl bg-slate-900 border-2 border-amber-400/60 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-md">
-        <div className="text-center sm:text-left">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-            SẴN SÀNG RA SÂN?
-          </h4>
-          <p className="text-xs text-slate-400">
-            Kiểm tra kỹ vị trí và danh sách 11 cầu thủ trước khi trọng tài nổi còi
-          </p>
+      {/* MIDDLE BANNER: DUAL READY STATUS & KICKOFF BUTTON */}
+      <div className="w-full bg-slate-900 border-2 border-amber-400/60 rounded-2xl p-3 sm:p-4 mb-4 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Readiness indicator badges */}
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs ${
+            blackReady
+              ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
+              : 'bg-red-950/40 border-red-500/50 text-red-300 animate-pulse'
+          }`}>
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span>Đội Đỏ: {blackReady ? '✅ ĐÃ SẴN SÀNG' : '⏳ Đang sắp xếp...'}</span>
+          </div>
+
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs ${
+            whiteReady
+              ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
+              : 'bg-amber-950/40 border-amber-500/50 text-amber-300 animate-pulse'
+          }`}>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <span>Đội Trắng: {whiteReady ? '✅ ĐÃ SẴN SÀNG' : '⏳ Đang sắp xếp...'}</span>
+          </div>
         </div>
 
-        <button
-          onClick={handleStartGame}
-          className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black text-sm rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] uppercase tracking-wider flex items-center justify-center gap-2 transform hover:scale-105 transition-all"
-        >
-          <span>🟢</span> BẮT ĐẦU TRẬN ĐẤU (KICK OFF)
-        </button>
+        {/* Kickoff CTA */}
+        <div>
+          {bothReady ? (
+            <button
+              onClick={handleStartGame}
+              className="px-8 py-3 bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black text-sm rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.5)] uppercase tracking-wider flex items-center justify-center gap-2 transform hover:scale-105 transition-all animate-bounce"
+            >
+              <span>🟢</span> BẮT ĐẦU TRẬN ĐẤU (KICK OFF)
+            </button>
+          ) : (
+            <div className="text-xs text-slate-400 text-center md:text-right font-medium">
+              👉 Cả 2 đội cần bấm <strong className="text-amber-400">Xác Nhận Đội Hình</strong> để khai cuộc!
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* BOTTOM HALF: TEAM WHITE */}
+      <div className="w-full bg-slate-950/80 border border-amber-500/30 rounded-3xl p-3 sm:p-4 shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          {/* Left Column: White Team Panel */}
+          <div className="lg:col-span-6">
+            <TeamPanel
+              team="white"
+              roster={whiteRoster}
+              onRosterChange={handleWhiteRosterChange}
+              onApplyPresetFormation={(preset) => handleApplyPreset('white', preset)}
+              isReady={whiteReady}
+              onToggleReady={() => handleToggleReady('white')}
+              readOnly={multiplayerMode === 'online' && onlineRole !== 'white'}
+            />
+          </div>
+
+          {/* Right Column: White Team Half Pitch */}
+          <div className="lg:col-span-6 flex justify-center">
+            <HalfPitchBoard
+              team="white"
+              board={board}
+              validTargets={selectedPiece?.team === 'white' ? validTargets : []}
+              onSelectPiece={(id) => handleSelectPiece('white', id)}
+              onCellClick={(x, y) => handleCellClick('white', x, y)}
+              isReady={whiteReady}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Piece Registry Modal */}

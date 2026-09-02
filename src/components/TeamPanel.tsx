@@ -7,8 +7,8 @@ interface TeamPanelProps {
   roster: TeamRoster;
   onRosterChange: (newRoster: TeamRoster) => void;
   onApplyPresetFormation?: (preset: '4-4-2' | '4-3-3' | '3-5-2') => void;
-  isActiveTeam: boolean;
-  onSelectAsActive: () => void;
+  isReady: boolean;
+  onToggleReady: () => void;
   readOnly?: boolean;
 }
 
@@ -19,8 +19,8 @@ const POSITION_NAMES = [
   'RCB (Trung vệ phải)',
   'RB (Hậu vệ phải)',
   'LM (Tiền vệ trái)',
-  'LCM (Tiền vệ trung tâm)',
-  'RCM (Tiền vệ trung tâm)',
+  'LCM (Tiền vệ TT)',
+  'RCM (Tiền vệ TT)',
   'RM (Tiền vệ phải)',
   'LST (Tiền đạo 1)',
   'RST (Tiền đạo 2)',
@@ -33,8 +33,8 @@ export default function TeamPanel({
   roster,
   onRosterChange,
   onApplyPresetFormation,
-  isActiveTeam,
-  onSelectAsActive,
+  isReady,
+  onToggleReady,
   readOnly = false,
 }: TeamPanelProps) {
   const [selectedSlotForPick, setSelectedSlotForPick] = useState<number | null>(null);
@@ -51,7 +51,7 @@ export default function TeamPanel({
   const isOverBudget = remainingBudget < 0;
 
   const handleSelectPieceForSlot = (pieceId: string) => {
-    if (selectedSlotForPick === null || readOnly) return;
+    if (selectedSlotForPick === null || readOnly || isReady) return;
     const nextPieces = [...roster.pieces];
     nextPieces[selectedSlotForPick] = pieceId;
     onRosterChange({
@@ -62,7 +62,7 @@ export default function TeamPanel({
   };
 
   const handleNameChange = (newName: string) => {
-    if (readOnly) return;
+    if (readOnly || isReady) return;
     onRosterChange({
       ...roster,
       teamName: newName,
@@ -71,26 +71,19 @@ export default function TeamPanel({
 
   return (
     <div
-      onClick={onSelectAsActive}
-      className={`flex flex-col h-full bg-slate-900/95 border-2 rounded-2xl p-3.5 shadow-2xl transition-all duration-200 ${
-        isActiveTeam
-          ? isWhite
-            ? 'border-amber-400 ring-2 ring-amber-400/40 shadow-amber-500/10'
-            : 'border-red-500 ring-2 ring-red-500/40 shadow-red-500/10'
-          : 'border-slate-800 opacity-90 hover:opacity-100'
+      className={`flex flex-col h-full bg-slate-900/95 border-2 rounded-2xl p-3 shadow-xl transition-all ${
+        isReady
+          ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+          : isWhite
+          ? 'border-amber-500/50'
+          : 'border-red-500/50'
       }`}
     >
-      {/* Team Header */}
-      <div
-        className={`p-3 rounded-xl mb-3 flex items-center justify-between border ${
-          isWhite
-            ? 'bg-gradient-to-r from-amber-950/60 to-slate-900 border-amber-500/30'
-            : 'bg-gradient-to-r from-red-950/60 to-slate-900 border-red-500/30'
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
+      {/* Team Header & Salary Cap Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 mb-2.5">
+        <div className="flex items-center gap-2">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl font-bold border shadow ${
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg font-bold border shadow ${
               isWhite
                 ? 'bg-amber-400 text-slate-950 border-amber-300'
                 : 'bg-red-600 text-white border-red-400'
@@ -101,84 +94,44 @@ export default function TeamPanel({
           <div>
             <input
               type="text"
-              disabled={readOnly}
+              disabled={readOnly || isReady}
               value={roster.teamName}
               onChange={(e) => handleNameChange(e.target.value)}
-              className="bg-transparent font-black text-sm text-white focus:bg-slate-800/80 px-1.5 py-0.5 rounded border border-transparent focus:border-slate-600 outline-none w-36 truncate"
+              className="bg-transparent font-black text-xs sm:text-sm text-white focus:bg-slate-800 px-1 py-0.5 rounded border border-transparent focus:border-slate-600 outline-none w-32 truncate"
             />
-            <div className="text-[10px] text-slate-400 font-medium px-1">
-              {isWhite ? 'Khởi đầu: Sân dưới' : 'Khởi đầu: Sân trên'}
-            </div>
           </div>
         </div>
 
-        {isActiveTeam && (
-          <span
-            className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
-              isWhite
-                ? 'bg-amber-400/20 text-amber-300 border-amber-400/50 animate-pulse'
-                : 'bg-red-600/20 text-red-300 border-red-500/50 animate-pulse'
-            }`}
-          >
-            Đang Chọn
-          </span>
-        )}
-      </div>
-
-      {/* Salary Cap Budget Bar */}
-      <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 mb-3">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span className="text-[11px] font-bold text-slate-400">Quỹ Lương:</span>
-          <span
-            className={`font-mono font-black ${
-              isOverBudget ? 'text-red-400' : 'text-emerald-400'
-            }`}
-          >
-            {totalCost} / {SALARY_CAP}đ
-          </span>
-        </div>
-        {/* Progress Bar */}
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+        {/* Budget Bar */}
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400">Lương: </span>
+            <span className={`text-xs font-mono font-black ${isOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>
+              {totalCost}/{SALARY_CAP}đ
+            </span>
+          </div>
           <div
-            className={`h-full transition-all duration-300 ${
-              isOverBudget
-                ? 'bg-red-500'
-                : totalCost > 130
-                ? 'bg-amber-400'
-                : 'bg-emerald-500'
-            }`}
-            style={{ width: `${Math.min(100, (totalCost / SALARY_CAP) * 100)}%` }}
-          />
-        </div>
-        <div className="flex justify-between items-center mt-1 text-[10px]">
-          <span className="text-slate-500">Giới hạn {SALARY_CAP}đ</span>
-          <span
-            className={`font-semibold ${
-              isOverBudget ? 'text-red-400' : 'text-emerald-400'
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              isOverBudget ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
             }`}
           >
-            {isOverBudget ? `Vượt ${Math.abs(remainingBudget)}đ` : `Còn dư ${remainingBudget}đ`}
-          </span>
+            {isOverBudget ? `Vượt ${Math.abs(remainingBudget)}` : `Dư ${remainingBudget}`}
+          </div>
         </div>
       </div>
 
-      {/* Formation Quick Presets */}
+      {/* Preset Formation Buttons */}
       {onApplyPresetFormation && (
-        <div className="mb-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            ⚡ Sơ đồ chiến thuật:
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
+        <div className="flex items-center justify-between gap-1.5 mb-2 px-1">
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Sơ đồ:</span>
+          <div className="flex gap-1">
             {(['4-4-2', '4-3-3', '3-5-2'] as const).map((preset) => (
               <button
                 key={preset}
                 type="button"
-                disabled={readOnly}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onApplyPresetFormation(preset);
-                }}
-                className="py-1 bg-slate-800/90 hover:bg-slate-700 disabled:opacity-40 text-[11px] font-bold text-slate-200 rounded-lg border border-slate-700 transition-colors"
+                disabled={readOnly || isReady}
+                onClick={() => onApplyPresetFormation(preset)}
+                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-[10px] font-bold text-slate-200 rounded border border-slate-700"
               >
                 {preset}
               </button>
@@ -187,74 +140,88 @@ export default function TeamPanel({
         </div>
       )}
 
-      {/* 11 Slots List */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-          <span>📋 11 Cầu thủ ra sân:</span>
-          <span className="text-amber-400">Nhấp để đổi quân</span>
-        </div>
+      {/* FM-style 11 Slots Table */}
+      <div className="flex-1 overflow-y-auto space-y-1 pr-1 max-h-[220px] custom-scrollbar mb-2.5">
+        {roster.pieces.map((pId, idx) => {
+          const def = getPieceDefinition(pId);
+          const isEditingThisSlot = selectedSlotForPick === idx;
 
-        <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar max-h-[340px]">
-          {roster.pieces.map((pId, idx) => {
-            const def = getPieceDefinition(pId);
-            const isEditingThisSlot = selectedSlotForPick === idx;
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={readOnly || isReady}
+              onClick={() => setSelectedSlotForPick(isEditingThisSlot ? null : idx)}
+              className={`w-full flex items-center justify-between p-1 rounded-lg text-left border transition-all text-xs ${
+                isEditingThisSlot
+                  ? 'bg-amber-500/20 border-amber-400 text-white'
+                  : 'bg-slate-950/70 border-slate-800/80 text-slate-300 hover:bg-slate-800/80'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <span className="text-sm w-4 text-center shrink-0">
+                  {def?.symbol || '♟'}
+                </span>
+                <div className="truncate">
+                  <span className="text-[10px] font-bold text-slate-300 mr-1.5">
+                    {POSITION_NAMES[idx].split(' ')[0]}
+                  </span>
+                  <span className="text-[10px] text-amber-300/90 font-medium truncate">
+                    {def?.vietnameseName || pId}
+                  </span>
+                </div>
+              </div>
 
-            return (
-              <div key={idx} className="relative">
-                <button
-                  type="button"
-                  disabled={readOnly}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedSlotForPick(isEditingThisSlot ? null : idx);
-                  }}
-                  className={`w-full flex items-center justify-between p-1.5 rounded-lg text-left border transition-all text-xs ${
-                    isEditingThisSlot
-                      ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800/70 hover:border-slate-700'
+              <div className="flex items-center gap-1 shrink-0">
+                <span
+                  className={`text-[8px] px-1 py-0.2 rounded font-black uppercase ${
+                    def?.role === 'GK'
+                      ? 'bg-yellow-500/20 text-yellow-300'
+                      : def?.role === 'FWD'
+                      ? 'bg-rose-500/20 text-rose-300'
+                      : def?.role === 'MID'
+                      ? 'bg-blue-500/20 text-blue-300'
+                      : 'bg-emerald-500/20 text-emerald-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-base w-5 text-center shrink-0">
-                      {def?.symbol || '♟'}
-                    </span>
-                    <div className="truncate">
-                      <div className="text-[11px] font-bold text-slate-200 truncate">
-                        {POSITION_NAMES[idx]}
-                      </div>
-                      <div className="text-[10px] text-amber-300/90 truncate">
-                        {def?.vietnameseName || pId}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span
-                      className={`text-[9px] px-1 py-0.2 rounded font-black uppercase ${
-                        def?.role === 'GK'
-                          ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                          : def?.role === 'FWD'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : def?.role === 'MID'
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      }`}
-                    >
-                      {def?.role}
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-700 text-amber-300">
-                      {def?.cost || 0}đ
-                    </span>
-                  </div>
-                </button>
+                  {def?.role}
+                </span>
+                <span className="text-[9px] font-bold px-1 py-0.2 bg-slate-900 rounded border border-slate-700 text-amber-300 font-mono">
+                  {def?.cost || 0}đ
+                </span>
               </div>
-            );
-          })}
-        </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Piece Picker Popover Modal when a slot is clicked */}
-      {selectedSlotForPick !== null && (
+      {/* Ready Button */}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onToggleReady}
+          className={`w-full py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md ${
+            isReady
+              ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40'
+              : isOverBudget
+              ? 'bg-red-500/20 text-red-300 border border-red-500/50 cursor-not-allowed opacity-60'
+              : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-slate-950 shadow-emerald-500/20'
+          }`}
+        >
+          {isReady ? (
+            <>
+              <span>🔓</span> Hủy Sẵn Sàng (Chỉnh lại)
+            </>
+          ) : (
+            <>
+              <span>✅</span> Xác Nhận Đội Hình (Sẵn sàng)
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Piece Picker Popover Modal */}
+      {selectedSlotForPick !== null && !isReady && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
           onClick={() => setSelectedSlotForPick(null)}
@@ -263,11 +230,10 @@ export default function TeamPanel({
             className="bg-slate-900 border-2 border-amber-400/80 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-black text-amber-400">
-                  CHỌN QUÂN CHO VỊ TRÍ: {POSITION_NAMES[selectedSlotForPick]}
+                  CHỌN QUÂN CHO: {POSITION_NAMES[selectedSlotForPick]}
                 </h3>
                 <p className="text-[11px] text-slate-400">
                   {roster.teamName} • Ngân sách còn lại:{' '}
@@ -284,7 +250,6 @@ export default function TeamPanel({
               </button>
             </div>
 
-            {/* Modal Pieces Grid */}
             <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-y-auto max-h-[60vh]">
               {allAvailablePieces.map((p) => {
                 const currentPieceInSlot = roster.pieces[selectedSlotForPick];
@@ -347,7 +312,6 @@ export default function TeamPanel({
               })}
             </div>
 
-            {/* Modal Footer */}
             <div className="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
               <button
                 onClick={() => setSelectedSlotForPick(null)}
