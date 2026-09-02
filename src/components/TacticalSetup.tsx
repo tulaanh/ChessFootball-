@@ -169,8 +169,8 @@ export default function TacticalSetup({
       formationIndex: currentTeamPieces.length,
     };
 
-    const nextPieces = [...board.pieces, newPiece];
-    const newPieceTypeIds = nextPieces
+    const updatedPieces = [...board.pieces, newPiece];
+    const newPieceTypeIds = updatedPieces
       .filter((p) => p.team === activeTabTeam)
       .map((p) => p.typeId);
 
@@ -184,13 +184,19 @@ export default function TacticalSetup({
 
     const nextBoard: BoardState = {
       ...board,
-      pieces: nextPieces,
+      pieces: updatedPieces,
       whiteRoster: isWhite ? updatedRoster : whiteRoster,
       blackRoster: !isWhite ? updatedRoster : blackRoster,
     };
 
     syncBoardState(nextBoard);
-    setPlacingTypeId(null);
+
+    // Keep placing mode active if team can still afford another piece of this type and not full
+    const newTeamPiecesCount = currentTeamPieces.length + 1;
+    const newTotalCost = totalCost + def.cost;
+    if (newTeamPiecesCount >= MAX_PIECES_PER_TEAM || newTotalCost + def.cost > SALARY_CAP) {
+      setPlacingTypeId(null);
+    }
   };
 
   // Remove a piece instance from the team (No minimum limit restriction)
