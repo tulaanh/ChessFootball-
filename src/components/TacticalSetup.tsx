@@ -792,13 +792,15 @@ export default function TacticalSetup({
           </div>
 
           {/* Grass Field Canvas */}
-          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-800 flex items-center justify-center p-1 sm:p-2 min-h-[480px]">
-            {/* Field Pattern & Markings */}
+          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 flex items-center justify-center p-1 sm:p-3 min-h-[440px]">
+            {/* Field Pattern & Markings: Constrained to 11/8 aspect ratio for perfect 1:1 square grid cells */}
             <div
-              className="grid gap-[2px] relative w-full h-full bg-[#14532d] p-1.5 rounded-xl border border-slate-600/50"
+              className="grid gap-1 sm:gap-1.5 relative w-full bg-[#14532d] p-2 sm:p-3 rounded-2xl border-2 border-emerald-500/40 shadow-2xl"
               style={{
                 gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rowIndices.length}, minmax(0, 1fr))`,
+                aspectRatio: '11 / 8',
+                maxWidth: 'min(100%, calc(72vh * 11 / 8), 640px)',
               }}
             >
               {rowIndices.map((y) =>
@@ -817,10 +819,10 @@ export default function TacticalSetup({
                   const isTopBox = y <= 3 && x >= 2 && x <= 8 && y >= 1;
                   const isBottomBox = y >= 11 && x >= 2 && x <= 8 && y <= 13;
 
-                  let cellBg = isEvenRow ? 'bg-[#15803d]/90' : 'bg-[#16a34a]/90';
+                  let cellBg = isEvenRow ? 'bg-[#15803d]' : 'bg-[#16a34a]';
 
                   if (isTopGoalArea || isBottomGoalArea) {
-                    cellBg = 'bg-yellow-950/80 border border-yellow-400/80';
+                    cellBg = 'bg-slate-900/85 border-2 border-white/90 shadow-[0_0_15px_rgba(255,255,255,0.4)] backdrop-blur-sm';
                   } else if (isOutOfPitch) {
                     cellBg = 'opacity-0 pointer-events-none';
                   }
@@ -832,72 +834,112 @@ export default function TacticalSetup({
                     <div
                       key={`${x}-${y}`}
                       onClick={() => handlePitchCellClick(x, y)}
-                      className={`relative flex items-center justify-center rounded transition-all group overflow-visible ${cellBg} ${
+                      className={`relative aspect-square flex items-center justify-center rounded-lg transition-all group overflow-visible ${cellBg} ${
                         isOutOfPitch
                           ? ''
                           : isPlacingTarget
-                          ? 'cursor-pointer ring-2 ring-lime-400/80 hover:bg-lime-400/40 bg-lime-950/30 scale-[0.98]'
+                          ? 'cursor-pointer ring-2 ring-lime-400 hover:bg-lime-400/40 bg-lime-950/40 scale-[0.98]'
                           : 'cursor-pointer hover:brightness-110'
                       }`}
                     >
+                      {/* Goal Mesh Pattern Overlay */}
+                      {(isTopGoalArea || isBottomGoalArea) && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                          <span className="text-[9px] sm:text-[11px] font-black text-white tracking-widest">GOAL</span>
+                        </div>
+                      )}
+
                       {/* Field Markings Lines */}
                       {y === 1 && !isOutOfPitch && (
-                        <div className="absolute inset-x-0 top-0 h-[2px] bg-white/50 pointer-events-none" />
+                        <div className="absolute inset-x-0 top-0 h-[2px] bg-white/70 pointer-events-none" />
                       )}
                       {y === 13 && !isOutOfPitch && (
-                        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/50 pointer-events-none" />
+                        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/70 pointer-events-none" />
                       )}
                       {isCenterLine && (
-                        <div className={`absolute inset-x-0 ${isWhite ? 'top-0' : 'bottom-0'} h-[2px] bg-white/60 pointer-events-none`} />
+                        <div className={`absolute inset-x-0 ${isWhite ? 'top-0' : 'bottom-0'} h-[2px] bg-white/70 pointer-events-none`} />
                       )}
                       {x === 5 && y === 7 && (
-                        <div className="absolute w-5 h-5 rounded-full border-2 border-white/60 pointer-events-none" />
+                        <div className="absolute w-5 h-5 rounded-full border-2 border-white/70 pointer-events-none" />
                       )}
                       {isTopBox && y === 3 && (
-                        <div className="absolute inset-x-0 bottom-0 h-[1.5px] bg-white/30 pointer-events-none" />
+                        <div className="absolute inset-x-0 bottom-0 h-[1.5px] bg-white/40 pointer-events-none" />
                       )}
                       {isBottomBox && y === 11 && (
-                        <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30 pointer-events-none" />
+                        <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/40 pointer-events-none" />
                       )}
 
                       {/* Placing Target Indicator */}
                       {isPlacingTarget && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-pulse">
-                          <span className="text-base text-lime-300 font-black">+</span>
+                          <span className="text-lg sm:text-xl text-lime-300 font-black drop-shadow-md">+</span>
                         </div>
                       )}
 
-                      {/* PIECE CARD ON PITCH */}
-                      {piece && (
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectPiece(piece.id);
-                          }}
-                          className={`relative z-20 flex flex-col items-center justify-between rounded-lg cursor-pointer transition-all duration-200 w-[52px] sm:w-[68px] md:w-[74px] h-[52px] sm:h-[64px] md:h-[68px] shadow-2xl overflow-hidden ${
-                            isSelected
-                              ? 'bg-[#1e293b] ring-2 sm:ring-4 ring-[#bef264] scale-110 shadow-[0_0_20px_rgba(190,242,100,0.8)] z-30'
-                              : 'bg-[#18233c]/95 hover:bg-[#1e293b] border border-slate-600 hover:scale-105'
-                          }`}
-                        >
-                          {/* Top Symbol */}
-                          <div className="flex-1 flex items-center justify-center w-full pt-1">
-                            <span className="text-xl sm:text-2xl md:text-3xl drop-shadow-md">
-                              {getPieceDefinition(piece.typeId)?.symbol || '♟'}
-                            </span>
-                          </div>
+                      {/* 3D PIECE BADGE ON PITCH */}
+                      {piece && (() => {
+                        const def = getPieceDefinition(piece.typeId);
+                        const isWhiteTeam = piece.team === 'white';
+                        return (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectPiece(piece.id);
+                            }}
+                            className={`relative z-20 w-[94%] h-[94%] rounded-xl flex flex-col items-center justify-between p-0.5 sm:p-1 cursor-pointer transition-all duration-200 shadow-xl ${
+                              isSelected
+                                ? 'ring-4 ring-yellow-400 scale-110 shadow-[0_0_25px_rgba(250,204,21,0.9)] z-30'
+                                : 'hover:scale-105'
+                            } ${
+                              isWhiteTeam
+                                ? 'bg-gradient-to-b from-white via-slate-100 to-slate-200 border-2 border-amber-400 text-slate-950'
+                                : 'bg-gradient-to-b from-rose-500 via-red-600 to-red-800 border-2 border-rose-300 text-white'
+                            }`}
+                          >
+                            {/* Top Badge: Role */}
+                            <div className="w-full flex items-center justify-between px-0.5">
+                              <span
+                                className={`text-[7px] sm:text-[9px] font-black uppercase px-1 rounded leading-none ${
+                                  def.role === 'GK'
+                                    ? 'bg-yellow-400 text-slate-950 font-black'
+                                    : def.role === 'FWD'
+                                    ? 'bg-rose-500 text-white'
+                                    : def.role === 'MID'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-emerald-600 text-white'
+                                }`}
+                              >
+                                {def.role}
+                              </span>
+                              <span className="text-[7px] sm:text-[9px] font-mono font-black text-amber-300 bg-slate-950/80 px-0.5 rounded leading-none">
+                                {def.cost}đ
+                              </span>
+                            </div>
 
-                          {/* Bottom Bar: Name & Points */}
-                          <div className="w-full bg-[#0d1322] px-1 py-0.5 flex items-center justify-between border-t border-slate-700/80">
-                            <span className="text-[8px] sm:text-[9px] font-black text-slate-200 truncate max-w-[42px] sm:max-w-[50px]">
-                              {getPieceDefinition(piece.typeId)?.vietnameseName.split(' ')[0] || getPieceDefinition(piece.typeId)?.name}
-                            </span>
-                            <span className="text-[8px] sm:text-[9px] font-black text-lime-400 font-mono">
-                              {getPieceDefinition(piece.typeId)?.cost || 0}đ
-                            </span>
+                            {/* Center Big Chess Symbol */}
+                            <div className="flex-1 flex items-center justify-center">
+                              <span
+                                className={`text-lg sm:text-2xl md:text-3xl font-black leading-none drop-shadow-md ${
+                                  isWhiteTeam ? 'text-amber-950' : 'text-white'
+                                }`}
+                              >
+                                {def.symbol}
+                              </span>
+                            </div>
+
+                            {/* Bottom Name Label */}
+                            <div className="w-full text-center">
+                              <span
+                                className={`text-[7px] sm:text-[8px] font-extrabold truncate block px-0.5 leading-none ${
+                                  isWhiteTeam ? 'text-slate-800' : 'text-slate-100'
+                                }`}
+                              >
+                                {def.vietnameseName.split(' ')[0]}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })

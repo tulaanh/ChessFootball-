@@ -55,15 +55,15 @@ export default function PitchBoard({
       </div>
 
       {/* Main Pitch Stadium */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-800 p-2 md:p-3">
-        {/* Pitch Turf Grid */}
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 p-2 md:p-3 flex items-center justify-center">
+        {/* Pitch Turf Grid: Strictly constrained to 11/15 aspect ratio for 1:1 square cells on all devices */}
         <div
-          className="grid gap-[2px] md:gap-1 relative bg-[#14532d] p-1.5 md:p-2 rounded-xl border border-slate-600/50 shadow-inner"
+          className="grid gap-[2px] sm:gap-1 relative bg-[#14532d] p-1.5 sm:p-2 rounded-2xl border-2 border-emerald-500/40 shadow-2xl"
           style={{
             gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${BOARD_HEIGHT}, minmax(0, 1fr))`,
-            width: 'min(94vw, 620px)',
-            height: 'min(138vw, 820px)',
+            aspectRatio: '11 / 15',
+            width: 'min(94vw, calc(82vh * 11 / 15), 580px)',
           }}
         >
           {Array.from({ length: BOARD_HEIGHT }).map((_, y) =>
@@ -92,7 +92,7 @@ export default function PitchBoard({
               if (isEvenCell) cellBg += ' brightness-[0.96]';
 
               if (isTopGoalArea || isBottomGoalArea) {
-                cellBg = 'bg-gradient-to-b from-amber-900/80 to-slate-800/90 border-2 border-amber-400 shadow-inner';
+                cellBg = 'bg-slate-900/85 border-2 border-white/90 shadow-[0_0_15px_rgba(255,255,255,0.4)] backdrop-blur-sm';
               } else if (isOutOfPitch) {
                 cellBg = 'opacity-0 pointer-events-none';
               } else if (isInActiveSetupZone) {
@@ -112,37 +112,36 @@ export default function PitchBoard({
                 <div
                   key={`${x}-${y}`}
                   onClick={handleSquareClick}
-                  className={`relative flex items-center justify-center rounded-md transition-all duration-150 group overflow-hidden ${cellBg} ${
+                  className={`relative aspect-square flex items-center justify-center rounded-md sm:rounded-lg transition-all duration-150 group overflow-visible ${cellBg} ${
                     isOutOfPitch ? 'pointer-events-none' : 'cursor-pointer'
                   } ${
-                    isSelected ? 'ring-2 md:ring-4 ring-yellow-400 z-20 scale-105' : ''
-                  } ${isTarget ? 'hover:scale-105 ring-2 ring-cyan-400 z-10' : !isOutOfPitch ? 'hover:brightness-110' : ''}`}
+                    isSelected ? 'ring-4 ring-yellow-400 z-30 scale-110 shadow-[0_0_20px_rgba(250,204,21,0.9)]' : ''
+                  } ${isTarget ? 'hover:scale-105 ring-2 ring-cyan-300 z-20 shadow-lg' : !isOutOfPitch ? 'hover:brightness-110' : ''}`}
                 >
                   {/* Field Markings Overlay */}
-                  {/* Top / Bottom Endlines on the pitch */}
                   {y === 1 && !isOutOfPitch && (
-                    <div className="absolute inset-x-0 top-0 h-[2px] bg-white/60 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-[2px] bg-white/70 pointer-events-none" />
                   )}
                   {y === 13 && !isOutOfPitch && (
-                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/60 pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/70 pointer-events-none" />
                   )}
                   {isCenterLine && (
-                    <div className="absolute inset-x-0 top-1/2 h-[2px] bg-white/40 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-1/2 h-[2px] bg-white/70 pointer-events-none" />
                   )}
                   {x === 5 && y === 7 && (
-                    <div className="absolute w-5 h-5 rounded-full border-2 border-white/50 pointer-events-none" />
+                    <div className="absolute w-4 h-4 sm:w-6 sm:h-6 rounded-full border-2 border-white/70 pointer-events-none" />
                   )}
                   {isTopBox && y === 3 && (
-                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/30 pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-[1.5px] bg-white/40 pointer-events-none" />
                   )}
                   {isBottomBox && y === 11 && (
-                    <div className="absolute inset-x-0 top-0 h-[2px] bg-white/30 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/40 pointer-events-none" />
                   )}
 
-                  {/* Goal Post Marker */}
+                  {/* Goal Post Mesh Marker */}
                   {(isTopGoalArea || isBottomGoalArea) && (
-                    <div className="absolute inset-0 bg-yellow-500/10 flex items-center justify-center text-[10px] text-yellow-200 font-extrabold opacity-40 pointer-events-none">
-                      GOAL
+                    <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                      <span className="text-[8px] sm:text-[10px] font-black text-white tracking-widest">GOAL</span>
                     </div>
                   )}
 
@@ -150,68 +149,88 @@ export default function PitchBoard({
                   {isTarget && (
                     <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
                       {board.activeAction === 'kick' ? (
-                        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-amber-400/30 border-2 border-yellow-300 animate-pulse flex items-center justify-center shadow-lg">
-                          <span className="text-xs md:text-sm">🎯</span>
+                        <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-amber-400/40 border-2 border-yellow-300 animate-pulse flex items-center justify-center shadow-lg">
+                          <span className="text-[10px] sm:text-xs">🎯</span>
                         </div>
                       ) : piece && piece.team !== board.currentTurn ? (
-                        <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-red-600/50 border-2 border-red-400 animate-ping flex items-center justify-center">
-                          <span className="text-xs">⚔️</span>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-red-600/60 border-2 border-red-400 animate-ping flex items-center justify-center">
+                          <span className="text-[10px]">⚔️</span>
                         </div>
                       ) : (
-                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-cyan-400/40 border-2 border-cyan-300 animate-bounce" />
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-cyan-400/50 border-2 border-cyan-300 animate-bounce" />
                       )}
                     </div>
                   )}
 
-                  {/* Piece Rendering */}
-                  {piece && (
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSquareClick();
-                      }}
-                      className={`relative z-10 flex flex-col items-center justify-center w-full h-full p-0.5 transition-transform duration-200 ${
-                        piece.team === board.currentTurn ? 'cursor-pointer hover:scale-110' : ''
-                      } ${piece.isStunned ? 'opacity-50 grayscale' : ''}`}
-                    >
-                      {/* Player Token Disc */}
-                      {(() => {
-                        const def = getPieceDefinition(piece.typeId);
-                        const isWhite = piece.team === 'white';
-                        return (
-                          <div
-                            className={`w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full flex flex-col items-center justify-center shadow-lg border-2 ${
-                              isWhite
-                                ? 'bg-gradient-to-b from-slate-100 to-amber-100 border-amber-400 text-slate-900 ring-1 ring-amber-300'
-                                : 'bg-gradient-to-b from-red-600 to-slate-900 border-red-400 text-white ring-1 ring-red-500'
+                  {/* 3D Piece Rendering */}
+                  {piece && (() => {
+                    const def = getPieceDefinition(piece.typeId);
+                    const isWhiteTeam = piece.team === 'white';
+                    return (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSquareClick();
+                        }}
+                        className={`relative z-10 w-[92%] h-[92%] rounded-lg sm:rounded-xl flex flex-col items-center justify-between p-0.5 transition-all duration-200 shadow-xl ${
+                          piece.team === board.currentTurn ? 'cursor-pointer hover:scale-105' : ''
+                        } ${piece.isStunned ? 'opacity-40 grayscale' : ''} ${
+                          isWhiteTeam
+                            ? 'bg-gradient-to-b from-white via-slate-100 to-slate-200 border-2 border-amber-400 text-slate-950 shadow-[0_3px_8px_rgba(0,0,0,0.35)]'
+                            : 'bg-gradient-to-b from-rose-500 via-red-600 to-red-800 border-2 border-rose-300 text-white shadow-[0_3px_8px_rgba(0,0,0,0.4)]'
+                        }`}
+                      >
+                        {/* Top: Role Tag */}
+                        <div className="w-full flex items-center justify-between px-0.5 leading-none">
+                          <span
+                            className={`text-[6px] sm:text-[8px] font-black uppercase px-0.5 rounded leading-none ${
+                              def.role === 'GK'
+                                ? 'bg-yellow-400 text-slate-950'
+                                : def.role === 'FWD'
+                                ? 'bg-rose-500 text-white'
+                                : def.role === 'MID'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-emerald-600 text-white'
                             }`}
                           >
-                            <span className="text-sm sm:text-base md:text-xl font-bold leading-none">
-                              {def.symbol}
+                            {def.role}
+                          </span>
+                          {piece.abilityCooldown && piece.abilityCooldown > 0 ? (
+                            <span className="text-[6px] sm:text-[7px] text-amber-300 bg-slate-950 px-0.5 rounded font-black">
+                              ⏳
                             </span>
-                            <span
-                              className={`text-[8px] sm:text-[9px] font-black uppercase leading-none px-1 rounded-sm mt-0.5 ${
-                                def.role === 'GK'
-                                  ? 'bg-yellow-500 text-black'
-                                  : def.role === 'FWD'
-                                  ? 'bg-rose-500 text-white'
-                                  : def.role === 'MID'
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-emerald-600 text-white'
-                              }`}
-                            >
-                              {def.role}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                          ) : null}
+                        </div>
+
+                        {/* Center: Big Chess Symbol */}
+                        <div className="flex-1 flex items-center justify-center leading-none">
+                          <span
+                            className={`text-sm sm:text-lg md:text-xl font-black leading-none drop-shadow-md ${
+                              isWhiteTeam ? 'text-amber-950' : 'text-white'
+                            }`}
+                          >
+                            {def.symbol}
+                          </span>
+                        </div>
+
+                        {/* Bottom: Name */}
+                        <div className="w-full text-center leading-none">
+                          <span
+                            className={`text-[6px] sm:text-[8px] font-extrabold truncate block px-0.5 leading-none ${
+                              isWhiteTeam ? 'text-slate-800' : 'text-slate-100'
+                            }`}
+                          >
+                            {def.vietnameseName.split(' ')[0]}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Ball Rendering */}
                   {isBallHere && (
-                    <div className="absolute z-20 pointer-events-none flex items-center justify-center">
-                      <div className="text-base sm:text-xl md:text-2xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] transform scale-110 animate-bounce">
+                    <div className="absolute z-30 pointer-events-none flex items-center justify-center">
+                      <div className="text-base sm:text-xl md:text-2xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)] transform scale-110 animate-bounce">
                         ⚽
                       </div>
                     </div>
