@@ -1,5 +1,9 @@
 export type TeamColor = 'white' | 'black';
 
+export type GameMode = 'local' | 'online' | 'ai';
+
+export type AIDifficulty = 'easy' | 'normal' | 'hard';
+
 export type PieceRole = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export type PrimitiveType = 'step' | 'slide' | 'leap' | 'cannon';

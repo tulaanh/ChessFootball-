@@ -5,6 +5,8 @@ import {
   Position,
   TeamColor,
   TeamRoster,
+  GameMode,
+  AIDifficulty,
 } from '@/engine/types';
 import {
   createInitialBoard,
@@ -24,6 +26,8 @@ interface TacticalSetupProps {
   initialWhiteRoster?: TeamRoster;
   initialBlackRoster?: TeamRoster;
   multiplayerMode?: 'local' | 'online';
+  gameMode?: GameMode;
+  aiDifficulty?: AIDifficulty;
   onlineRole?: TeamColor | null;
   onlineRoomId?: string | null;
   onStartMatch: (board: BoardState, whiteRoster: TeamRoster, blackRoster: TeamRoster) => void;
@@ -38,6 +42,8 @@ export default function TacticalSetup({
   initialWhiteRoster = DEFAULT_WHITE_ROSTER,
   initialBlackRoster = DEFAULT_BLACK_ROSTER,
   multiplayerMode = 'local',
+  gameMode = 'local',
+  aiDifficulty = 'normal',
   onlineRole = null,
   onlineRoomId = null,
   onStartMatch,
@@ -54,7 +60,7 @@ export default function TacticalSetup({
   );
 
   const [whiteReady, setWhiteReady] = useState(false);
-  const [blackReady, setBlackReady] = useState(false);
+  const [blackReady, setBlackReady] = useState(gameMode === 'ai');
 
   // Interaction states
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
@@ -520,10 +526,12 @@ export default function TacticalSetup({
 
             <button
               onClick={() => {
-                if (multiplayerMode === 'local' || onlineRole === 'black') {
+                if (gameMode !== 'ai' && (multiplayerMode === 'local' || onlineRole === 'black')) {
                   setActiveTabTeam('black');
                   setSelectedPieceId(null);
                   setPlacingTypeId(null);
+                } else if (gameMode === 'ai') {
+                  setActiveTabTeam('black');
                 }
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
@@ -532,8 +540,8 @@ export default function TacticalSetup({
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <span>♚</span>
-              <span>ĐỘI ĐỎ</span>
+              <span>{gameMode === 'ai' ? '🤖' : '♚'}</span>
+              <span>{gameMode === 'ai' ? 'ĐỘI ĐỎ (MÁY AI)' : 'ĐỘI ĐỎ'}</span>
               {blackReady ? (
                 <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">✓ SẴN SÀNG</span>
               ) : (
@@ -555,7 +563,11 @@ export default function TacticalSetup({
           ) : (
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-amber-300/90 bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-500/30">
               <span>⏳</span>
-              <span>Cả 2 đội cần bấm [Xác Nhận Đội Hình] để {isMidMatchAdjustment ? 'tiếp tục' : 'bắt đầu'}</span>
+              <span>
+                {gameMode === 'ai'
+                  ? 'Bạn hãy bấm [Xác Nhận Đội Hình] của Đội Trắng để bắt đầu đấu với Máy!'
+                  : `Cả 2 đội cần bấm [Xác Nhận Đội Hình] để ${isMidMatchAdjustment ? 'tiếp tục' : 'bắt đầu'}`}
+              </span>
             </div>
           )}
 

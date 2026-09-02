@@ -5,6 +5,8 @@ import {
   Position,
   TeamColor,
   TeamRoster,
+  GameMode,
+  AIDifficulty,
 } from '@/engine/types';
 import {
   calculateValidKicks,
@@ -20,6 +22,7 @@ import {
   DEFAULT_WHITE_ROSTER,
   getPieceDefinition,
 } from '@/engine/piece-registry';
+import { getBestAIMove } from '@/engine/ai-bot';
 import { multiplayerService, NetworkPacket } from '@/services/multiplayer';
 import PitchBoard from './PitchBoard';
 import GoalCelebration from './GoalCelebration';
@@ -31,6 +34,8 @@ interface ChessFootballGameProps {
   whiteRoster?: TeamRoster;
   blackRoster?: TeamRoster;
   multiplayerMode?: 'local' | 'online';
+  gameMode?: GameMode;
+  aiDifficulty?: AIDifficulty;
   onlineRole?: TeamColor | null;
   onlineRoomId?: string | null;
   onBackToMenu?: () => void;
@@ -42,6 +47,8 @@ export default function ChessFootballGame({
   whiteRoster: initialWhiteRoster = DEFAULT_WHITE_ROSTER,
   blackRoster: initialBlackRoster = DEFAULT_BLACK_ROSTER,
   multiplayerMode: initialMultiplayerMode = 'local',
+  gameMode = 'local',
+  aiDifficulty = 'normal',
   onlineRole: initialOnlineRole = null,
   onlineRoomId: initialOnlineRoomId = null,
   onBackToMenu,
@@ -58,6 +65,7 @@ export default function ChessFootballGame({
   const [onlineRole, setOnlineRole] = useState<TeamColor | null>(initialOnlineRole);
   const [onlineRoomId, setOnlineRoomId] = useState<string | null>(initialOnlineRoomId);
   const [floatingEmotes, setFloatingEmotes] = useState<{ id: string; emoji: string; team: TeamColor }[]>([]);
+  const [isAIThinking, setIsAIThinking] = useState<boolean>(false);
 
   // Modals state
   const [registryModalOpen, setRegistryModalOpen] = useState<boolean>(false);
@@ -141,8 +149,54 @@ export default function ChessFootballGame({
     }
   };
 
-  // Check if player has permission to interact in Online Mode
-  const isMyTurnInOnline = multiplayerMode === 'local' || onlineRole === board.currentTurn;
+  // Automated turn execution for AI Bot
+  useEffect(() => {
+    if (gameMode !== 'ai' || board.currentTurn !== 'black' || board.winner) {
+      return;
+    }
+
+    setIsAIThinking(true);
+
+    const timer = setTimeout(() => {
+      const bestMove = getBestAIMove(board, 'black', aiDifficulty);
+      if (bestMove) {
+        if (bestMove.action === 'move') {
+          const nextBoard = executeMove(
+            board,
+            bestMove.pieceId,
+            bestMove.target.x,
+            bestMove.target.y
+          );
+          if (nextBoard.lastGoalScorer) {
+            setShowGoalBanner(true);
+          }
+          updateAndSyncBoard(nextBoard);
+        } else if (bestMove.action === 'kick') {
+          const nextBoard = executeKick(
+            board,
+            bestMove.pieceId,
+            bestMove.target.x,
+            bestMove.target.y
+          );
+          if (nextBoard.lastGoalScorer) {
+            setShowGoalBanner(true);
+          }
+          updateAndSyncBoard(nextBoard);
+        }
+      } else {
+        const nextBoard = endTurn(board);
+        updateAndSyncBoard(nextBoard);
+      }
+      setIsAIThinking(false);
+    }, 650);
+
+    return () => clearTimeout(timer);
+  }, [board, gameMode, aiDifficulty]);
+
+  // Check if player has permission to interact in Online Mode / AI Mode
+  const isMyTurnInOnline = gameMode === 'ai'
+    ? board.currentTurn === 'white'
+    : (multiplayerMode === 'local' || onlineRole === board.currentTurn);
 
   // Calculate valid targets based on mode
   let validTargets: Position[] = [];
@@ -309,7 +363,12 @@ export default function ChessFootballGame({
 
           <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block" />
 
-          {multiplayerMode === 'online' ? (
+          {gameMode === 'ai' ? (
+            <span className="text-xs bg-purple-900/60 text-purple-300 font-black px-2.5 py-0.5 rounded-full border border-purple-600 flex items-center gap-1.5">
+              <span>🤖</span>
+              <span>ĐẤU VỚI MÁY ({aiDifficulty === 'easy' ? 'DỄ' : aiDifficulty === 'hard' ? 'KHÓ' : 'VỪA'})</span>
+            </span>
+          ) : multiplayerMode === 'online' ? (
             <span className="text-xs bg-emerald-900/60 text-emerald-300 font-black px-2.5 py-0.5 rounded-full border border-emerald-600 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>ONLINE: {onlineRoomId} ({onlineRole === 'white' ? 'Trắng ♔' : 'Đỏ ♚'})</span>
@@ -380,7 +439,7 @@ export default function ChessFootballGame({
                 }`}
               >
                 <span>⚽ LƯỢT:</span>
-                <span>{isWhiteTurn ? 'ĐỘI TRẮNG' : 'ĐỘI ĐỎ'}</span>
+                <span>{isWhiteTurn ? 'ĐỘI TRẮNG' : gameMode === 'ai' ? 'MÁY (AI BOT)' : 'ĐỘI ĐỎ'}</span>
               </div>
 
               <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-700">
@@ -389,6 +448,12 @@ export default function ChessFootballGame({
                 </span>
               </div>
             </div>
+
+            {gameMode === 'ai' && !isWhiteTurn && (
+              <p className="text-[11px] text-purple-300 font-bold mt-1.5 animate-pulse flex items-center gap-1">
+                <span>🤖</span> Máy (AI) đang tính toán chiến thuật...
+              </p>
+            )}
 
             {multiplayerMode === 'online' && !isMyTurnInOnline && (
               <p className="text-[11px] text-amber-300 font-bold mt-1 animate-pulse">
@@ -400,11 +465,13 @@ export default function ChessFootballGame({
           {/* Team Black */}
           <div className="flex items-center gap-3 w-full md:w-1/3 justify-end">
             <div className="text-right">
-              <h3 className="font-extrabold text-base sm:text-lg text-white">{blackRoster.teamName}</h3>
+              <h3 className="font-extrabold text-base sm:text-lg text-white">
+                {gameMode === 'ai' ? `🤖 Bot AI (${aiDifficulty === 'easy' ? 'Dễ' : aiDifficulty === 'hard' ? 'Khó' : 'Vừa'})` : blackRoster.teamName}
+              </h3>
               <p className="text-[11px] text-slate-300">Tấn công Khung thành Trắng (dưới)</p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-red-600/20 border-2 border-red-500 flex items-center justify-center text-2xl font-black text-red-400 shadow-lg">
-              ♚
+              {gameMode === 'ai' ? '🤖' : '♚'}
             </div>
           </div>
         </div>

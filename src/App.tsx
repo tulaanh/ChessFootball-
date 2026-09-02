@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MainMenu from './components/MainMenu';
 import TacticalSetup from './components/TacticalSetup';
 import ChessFootballGame from './components/ChessFootballGame';
-import { BoardState, TeamColor, TeamRoster } from './engine/types';
+import { BoardState, TeamColor, TeamRoster, GameMode, AIDifficulty } from './engine/types';
 import { DEFAULT_BLACK_ROSTER, DEFAULT_WHITE_ROSTER } from './engine/piece-registry';
 import { createInitialBoard } from './engine/engine';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<'menu' | 'setup' | 'playing'>('menu');
-  const [multiplayerMode, setMultiplayerMode] = useState<'local' | 'online'>('local');
+  const [gameMode, setGameMode] = useState<GameMode>('local');
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('normal');
   const [onlineRole, setOnlineRole] = useState<TeamColor | null>(null);
   const [onlineRoomId, setOnlineRoomId] = useState<string | null>(null);
 
@@ -20,7 +21,16 @@ export default function App() {
 
   // Handle Offline Start from Main Menu -> Go to Tactical Setup
   const handleStartOffline = () => {
-    setMultiplayerMode('local');
+    setGameMode('local');
+    setOnlineRole(null);
+    setOnlineRoomId(null);
+    setCurrentScreen('setup');
+  };
+
+  // Handle AI Mode Start from Main Menu -> Go to Tactical Setup
+  const handleStartAI = (difficulty: AIDifficulty) => {
+    setGameMode('ai');
+    setAiDifficulty(difficulty);
     setOnlineRole(null);
     setOnlineRoomId(null);
     setCurrentScreen('setup');
@@ -28,7 +38,7 @@ export default function App() {
 
   // Handle Online Start from Main Menu (after room joined) -> Go to Tactical Setup
   const handleStartOnline = (role: TeamColor, roomId: string) => {
-    setMultiplayerMode('online');
+    setGameMode('online');
     setOnlineRole(role);
     setOnlineRoomId(roomId);
     setCurrentScreen('setup');
@@ -59,6 +69,7 @@ export default function App() {
         {currentScreen === 'menu' && (
           <MainMenu
             onStartOffline={handleStartOffline}
+            onStartAI={handleStartAI}
             onStartOnline={handleStartOnline}
           />
         )}
@@ -68,7 +79,9 @@ export default function App() {
             initialBoard={currentBoard}
             initialWhiteRoster={whiteRoster}
             initialBlackRoster={blackRoster}
-            multiplayerMode={multiplayerMode}
+            multiplayerMode={gameMode === 'online' ? 'online' : 'local'}
+            gameMode={gameMode}
+            aiDifficulty={aiDifficulty}
             onlineRole={onlineRole}
             onlineRoomId={onlineRoomId}
             onStartMatch={handleStartMatch}
@@ -81,7 +94,9 @@ export default function App() {
             initialBoard={currentBoard}
             whiteRoster={whiteRoster}
             blackRoster={blackRoster}
-            multiplayerMode={multiplayerMode}
+            multiplayerMode={gameMode === 'online' ? 'online' : 'local'}
+            gameMode={gameMode}
+            aiDifficulty={aiDifficulty}
             onlineRole={onlineRole}
             onlineRoomId={onlineRoomId}
             onBackToMenu={handleBackToMenu}
