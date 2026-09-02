@@ -557,7 +557,7 @@ export function executeMove(
     commentary.unshift({
       id: `c_${Date.now()}`,
       text: isCollectingBall
-        ? `⚡ [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} đã băng vào khống chế bóng thành công! (Lấy bóng - Thêm 1 lượt!)`
+        ? `⚡ [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} đã di chuyển khống chế bóng thành công! (Nhận bóng - Không mất lượt!)`
         : isCarryingBall
         ? `🏃 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} dẫn bóng tới vị trí (${targetX}, ${targetY}).`
         : `🏃 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} di chuyển tới vị trí (${targetX}, ${targetY}).`,
