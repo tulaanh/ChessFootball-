@@ -68,9 +68,9 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     name: 'Queen',
     vietnameseName: 'Nhạc Trưởng (Hậu)',
     role: 'FWD',
-    cost: 45,
+    cost: 35,
     symbol: '♕',
-    description: 'Ngôi sao toàn năng nhất sân. Di chuyển trượt xa 8 hướng, sút bóng uy lực. Sở hữu [HÀO QUANG NHẠC TRƯỞNG]: Đường chuyền dọn cỗ cho đồng đội mở ra các cơ hội tấn công bùng nổ!',
+    description: 'Ngôi sao toàn năng nhất sân. Di chuyển trượt xa 8 hướng, sút bóng uy lực. Sở hữu [HÀO QUANG NHẠC TRƯỞNG]: Đường chuyền dọn cỗ cho đồng đội hồi phục thế trận tấn công bùng nổ 2 AP!',
     moveRule: {
       type: 'slide',
       vectors: ALL_8_VECTORS,
@@ -81,7 +81,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       power: 5,
     },
     hasPlaymakerAura: true,
-    specialAbilityDesc: 'Hào Quang Nhạc Trưởng: Chuyên gia kiến tạo dọn cỗ, chuyền bóng cho đồng đội hồi phục thế trận tấn công bùng nổ!',
+    specialAbilityDesc: 'Hào Quang Nhạc Trưởng: Chuyên gia kiến tạo dọn cỗ, chuyền bóng cho đồng đội hồi phục thế trận tấn công bùng nổ 2 AP!',
   },
 
   // 3. ROOK (Hậu Vệ Quét / Xe)
@@ -112,7 +112,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     name: 'Bishop',
     vietnameseName: 'Tiền Vệ Cánh (Tượng)',
     role: 'MID',
-    cost: 20,
+    cost: 15,
     symbol: '♗',
     description: 'Chuyên gia chọc khe biên. Di chuyển trượt chéo xa không giới hạn, sút xoáy chéo xé toang hàng phòng ngự đối phương.',
     moveRule: {
@@ -125,7 +125,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       power: 4,
     },
     hasMasterBallControl: true,
-    specialAbilityDesc: 'Khống Chế Thượng Thừa: Di chuyển vào ô có bóng để nhận bóng sẽ KHÔNG MẤT LƯỢT!',
+    specialAbilityDesc: 'Khống Chế Thượng Thừa: Di chuyển vào ô có bóng để nhận bóng sẽ KHÔNG MẤT LƯỢT (0 AP)!',
   },
 
   // 5. KNIGHT (Tiền Đạo Lốp Bóng / Mã)
@@ -134,7 +134,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     name: 'Knight',
     vietnameseName: 'Tiền Đạo Lốp Bóng (Mã)',
     role: 'FWD',
-    cost: 25,
+    cost: 20,
     symbol: '♘',
     description: 'Sát thủ lốp bóng vòng cấm. Nhảy chữ L vượt qua mọi vật cản. Sở hữu kỹ năng đặc biệt [SIÊU PHẨM LỐP BÓNG]: Sút bóng bổng hình vòm tới bất kỳ ô nào trong bán kính 3 ô mọi hướng!',
     moveRule: {
@@ -181,7 +181,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     name: 'Cannon',
     vietnameseName: 'Pháo Thủ (Cờ Tướng)',
     role: 'MID',
-    cost: 25,
+    cost: 20,
     symbol: '💣',
     description: 'Nghệ thuật Cờ Tướng: Di chuyển thẳng trượt xa không giới hạn. Sút bóng: CẦN 1 CẦU THỦ LÀM NGÒI để nã đại bác bay qua đầu sang ô phía sau!',
     moveRule: {
@@ -217,7 +217,7 @@ export function registerPiece(piece: PieceDefinition): boolean {
   return true;
 }
 
-// Default 4-4-2 standard lineup
+// Default 4-4-2 standard lineup for White
 export const DEFAULT_WHITE_ROSTER: TeamRoster = {
   teamName: 'Đội Trắng (White Royals)',
   pieces: [
@@ -235,19 +235,20 @@ export const DEFAULT_WHITE_ROSTER: TeamRoster = {
   ],
 };
 
+// Grandmaster 3-4-3 Ultra Tactical AI Default Lineup for Black (150/150 pts)
 export const DEFAULT_BLACK_ROSTER: TeamRoster = {
-  teamName: 'Đội Đỏ Đen (Red Strikers)',
+  teamName: 'Đội Đỏ AI (Red Grandmaster)',
   pieces: [
-    'king',   // 0: GK
-    'pawn',   // 1: LB
-    'pawn',   // 2: CB
-    'pawn',   // 3: CB
-    'pawn',   // 4: RB
-    'cannon', // 5: LM (Special Cannon!)
-    'bishop', // 6: CM
-    'bishop', // 7: CM
-    'rook',   // 8: RM
-    'knight', // 9: ST (Replaced Ninja with Knight)
-    'queen',  // 10: ST
+    'king',   // 0: GK (Vua) - 0đ
+    'pawn',   // 1: LB (Tốt đánh chặn trái) - 5đ
+    'rook',   // 2: CB (Xe ủi càn quét) - 25đ
+    'pawn',   // 3: CB (Tốt đánh chặn tâm) - 5đ
+    'pawn',   // 4: RB (Tốt đánh chặn phải) - 5đ
+    'bishop', // 5: LM (Tượng kiến thiết 0 AP) - 15đ
+    'queen',  // 6: CM (Hậu Nhạc Trưởng 2 AP) - 35đ
+    'bishop', // 7: CM (Tượng thu hồi 0 AP) - 15đ
+    'pawn',   // 8: RM (Tốt bứt phá cánh phải) - 5đ
+    'cannon', // 9: ST (Pháo thủ oanh tạc) - 20đ
+    'knight', // 10: ST (Mã lốp bóng sát thủ) - 20đ
   ],
 };
