@@ -29,35 +29,9 @@ interface TacticalSetupProps {
   onBackToMenu: () => void;
 }
 
-const POSITION_LABELS = [
-  'GK',
-  'LB',
-  'LCB',
-  'RCB',
-  'RB',
-  'LM',
-  'LCM',
-  'RCM',
-  'RM',
-  'LST',
-  'RST',
-];
-
-const POSITION_FULL_NAMES = [
-  'Thủ môn (Goalkeeper)',
-  'Hậu vệ cánh trái (Left Back)',
-  'Trung vệ trái (Center Back)',
-  'Trung vệ phải (Center Back)',
-  'Hậu vệ cánh phải (Right Back)',
-  'Tiền vệ cánh trái (Left Mid)',
-  'Tiền vệ trung tâm (Central Mid)',
-  'Tiền vệ trung tâm (Central Mid)',
-  'Tiền vệ cánh phải (Right Mid)',
-  'Tiền đạo 1 (Left Striker)',
-  'Tiền đạo 2 (Right Striker)',
-];
-
 const SALARY_CAP = 150;
+const MAX_PIECES_PER_TEAM = 11;
+const MIN_PIECES_PER_TEAM = 5;
 
 export default function TacticalSetup({
   initialWhiteRoster = DEFAULT_WHITE_ROSTER,
@@ -72,8 +46,6 @@ export default function TacticalSetup({
     multiplayerMode === 'online' && onlineRole ? onlineRole : 'white'
   );
 
-  const [activeSubTab, setActiveSubTab] = useState<'player' | 'formation' | 'tactics'>('player');
-
   const [whiteRoster, setWhiteRoster] = useState<TeamRoster>(initialWhiteRoster);
   const [blackRoster, setBlackRoster] = useState<TeamRoster>(initialBlackRoster);
   const [board, setBoard] = useState<BoardState>(() =>
@@ -84,20 +56,24 @@ export default function TacticalSetup({
   const [blackReady, setBlackReady] = useState(false);
 
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
-  const [selectedSlotForPick, setSelectedSlotForPick] = useState<number | null>(null);
+  const [isAddPieceModalOpen, setIsAddPieceModalOpen] = useState(false);
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
   const allAvailablePieces = getAllPieces();
 
   // Current active team context
   const isWhite = activeTabTeam === 'white';
+  const currentTeamPieces = board.pieces.filter((p) => p.team === activeTabTeam);
   const currentRoster = isWhite ? whiteRoster : blackRoster;
   const isCurrentTeamReady = isWhite ? whiteReady : blackReady;
   const isReadOnly = multiplayerMode === 'online' && onlineRole !== activeTabTeam;
 
+  // King count check
+  const kingCount = currentTeamPieces.filter((p) => p.typeId === 'king').length;
+
   // Calculate budget
-  const totalCost = currentRoster.pieces.reduce((sum, pId) => {
-    const def = getPieceDefinition(pId);
+  const totalCost = currentTeamPieces.reduce((sum, p) => {
+    const def = getPieceDefinition(p.typeId);
     return sum + (def?.cost || 0);
   }, 0);
   const remainingBudget = SALARY_CAP - totalCost;
@@ -145,102 +121,130 @@ export default function TacticalSetup({
     }
   }, [multiplayerMode, onBackToMenu]);
 
-  // Handle slot piece replacement
-  const handleSelectPieceForSlot = (pieceId: string) => {
-    if (selectedSlotForPick === null || isReadOnly || isCurrentTeamReady) return;
-    const nextPieces = [...currentRoster.pieces];
-    nextPieces[selectedSlotForPick] = pieceId;
+  // Find an empty position in the team's half to place a new piece
+  const findEmptyPositionInHalf = (team: TeamColor): Position | null => {
+    const isW = team === 'white';
+    const minY = isW ? 8 : 1;
+    const maxY = isW ? 13 : 6;
 
-    const newRoster = { ...currentRoster, pieces: nextPieces };
-    if (isWhite) {
-      setWhiteRoster(newRoster);
-    } else {
-      setBlackRoster(newRoster);
-    }
-
-    // Update piece instance on board
-    const updatedPieces = board.pieces.map((p) => {
-      if (p.team === activeTabTeam && p.formationIndex === selectedSlotForPick) {
-        return { ...p, typeId: pieceId };
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = 1; x <= 9; x++) {
+        const isOccupied = board.pieces.some(
+          (p) => p.position.x === x && p.position.y === y && p.team === team
+        );
+        if (!isOccupied) {
+          return { x, y };
+        }
       }
-      return p;
-    });
-
-    const nextBoard: BoardState = {
-      ...board,
-      pieces: updatedPieces,
-      whiteRoster: isWhite ? newRoster : whiteRoster,
-      blackRoster: !isWhite ? newRoster : blackRoster,
-    };
-    syncBoardState(nextBoard);
-    setSelectedSlotForPick(null);
+    }
+    return null;
   };
 
-  // Presets
-  const handleApplyPreset = (preset: '4-4-2' | '4-3-3' | '3-5-2') => {
+  // Add new piece to the active team
+  const handleAddPiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
-    let positions: Position[] = [];
 
-    if (preset === '4-4-2') {
-      positions = isWhite
-        ? [
-            { x: 5, y: 13 },
-            { x: 1, y: 11 }, { x: 3, y: 11 }, { x: 7, y: 11 }, { x: 9, y: 11 },
-            { x: 1, y: 9 }, { x: 4, y: 9 }, { x: 6, y: 9 }, { x: 9, y: 9 },
-            { x: 4, y: 8 }, { x: 6, y: 8 },
-          ]
-        : [
-            { x: 5, y: 1 },
-            { x: 1, y: 3 }, { x: 3, y: 3 }, { x: 7, y: 3 }, { x: 9, y: 3 },
-            { x: 1, y: 5 }, { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 9, y: 5 },
-            { x: 4, y: 6 }, { x: 6, y: 6 },
-          ];
-    } else if (preset === '4-3-3') {
-      positions = isWhite
-        ? [
-            { x: 5, y: 13 },
-            { x: 1, y: 11 }, { x: 3, y: 11 }, { x: 7, y: 11 }, { x: 9, y: 11 },
-            { x: 2, y: 9 }, { x: 5, y: 9 }, { x: 8, y: 9 },
-            { x: 2, y: 8 }, { x: 5, y: 8 }, { x: 8, y: 8 },
-          ]
-        : [
-            { x: 5, y: 1 },
-            { x: 1, y: 3 }, { x: 3, y: 3 }, { x: 7, y: 3 }, { x: 9, y: 3 },
-            { x: 2, y: 5 }, { x: 5, y: 5 }, { x: 8, y: 5 },
-            { x: 2, y: 6 }, { x: 5, y: 6 }, { x: 8, y: 6 },
-          ];
-    } else if (preset === '3-5-2') {
-      positions = isWhite
-        ? [
-            { x: 5, y: 13 },
-            { x: 3, y: 11 }, { x: 5, y: 11 }, { x: 7, y: 11 },
-            { x: 1, y: 9 }, { x: 3, y: 9 }, { x: 5, y: 9 }, { x: 7, y: 9 }, { x: 9, y: 9 },
-            { x: 4, y: 8 }, { x: 6, y: 8 },
-          ]
-        : [
-            { x: 5, y: 1 },
-            { x: 3, y: 3 }, { x: 5, y: 3 }, { x: 7, y: 3 },
-            { x: 1, y: 5 }, { x: 3, y: 5 }, { x: 5, y: 5 }, { x: 7, y: 5 }, { x: 9, y: 5 },
-            { x: 4, y: 6 }, { x: 6, y: 6 },
-          ];
+    if (currentTeamPieces.length >= MAX_PIECES_PER_TEAM) {
+      alert(`Đội hình đã đạt tối đa ${MAX_PIECES_PER_TEAM} quân cờ!`);
+      return;
     }
 
-    const currentTeamPieces = board.pieces.filter((p) => p.team === activeTabTeam);
-    const otherPieces = board.pieces.filter((p) => p.team !== activeTabTeam);
-    const updatedTeamPieces = currentTeamPieces.map((p, idx) => ({
-      ...p,
-      position: positions[idx] || p.position,
-    }));
+    if (pieceId === 'king' && kingCount >= 1) {
+      alert('Mỗi đội chỉ được phép có duy nhất 1 con Vua (Thủ Môn)!');
+      return;
+    }
+
+    const def = getPieceDefinition(pieceId);
+    if (totalCost + def.cost > SALARY_CAP) {
+      alert(`Vượt quá quỹ lương ${SALARY_CAP} điểm!`);
+      return;
+    }
+
+    const targetPos = findEmptyPositionInHalf(activeTabTeam);
+    if (!targetPos) {
+      alert('Không còn ô trống trên nửa sân để đặt quân!');
+      return;
+    }
+
+    const newPiece: PieceInstance = {
+      id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      typeId: pieceId,
+      team: activeTabTeam,
+      position: targetPos,
+      formationIndex: currentTeamPieces.length,
+    };
+
+    const nextPieces = [...board.pieces, newPiece];
+    const newPieceTypeIds = nextPieces
+      .filter((p) => p.team === activeTabTeam)
+      .map((p) => p.typeId);
+
+    const updatedRoster: TeamRoster = {
+      ...currentRoster,
+      pieces: newPieceTypeIds,
+    };
+
+    if (isWhite) setWhiteRoster(updatedRoster);
+    else setBlackRoster(updatedRoster);
 
     const nextBoard: BoardState = {
       ...board,
-      pieces: [...otherPieces, ...updatedTeamPieces],
-      selectedPieceId: null,
+      pieces: nextPieces,
+      whiteRoster: isWhite ? updatedRoster : whiteRoster,
+      blackRoster: !isWhite ? updatedRoster : blackRoster,
     };
+
+    syncBoardState(nextBoard);
+    setIsAddPieceModalOpen(false);
+  };
+
+  // Delete a piece from the team
+  const handleDeletePiece = (pieceId: string) => {
+    if (isReadOnly || isCurrentTeamReady) return;
+
+    const pieceToDelete = board.pieces.find((p) => p.id === pieceId);
+    if (!pieceToDelete) return;
+
+    // RULE: Exactly 1 King must remain
+    if (pieceToDelete.typeId === 'king') {
+      alert('Không thể xóa Vua! Mỗi đội bắt buộc phải có 1 con Vua làm Thủ Môn.');
+      return;
+    }
+
+    if (currentTeamPieces.length <= MIN_PIECES_PER_TEAM) {
+      alert(`Mỗi đội cần có tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ trên sân!`);
+      return;
+    }
+
+    const nextPieces = board.pieces.filter((p) => p.id !== pieceId);
+    const newPieceTypeIds = nextPieces
+      .filter((p) => p.team === activeTabTeam)
+      .map((p) => p.typeId);
+
+    const updatedRoster: TeamRoster = {
+      ...currentRoster,
+      pieces: newPieceTypeIds,
+    };
+
+    if (isWhite) setWhiteRoster(updatedRoster);
+    else setBlackRoster(updatedRoster);
+
+    const nextBoard: BoardState = {
+      ...board,
+      pieces: nextPieces,
+      selectedPieceId: selectedPieceId === pieceId ? null : selectedPieceId,
+      whiteRoster: isWhite ? updatedRoster : whiteRoster,
+      blackRoster: !isWhite ? updatedRoster : blackRoster,
+    };
+
+    if (selectedPieceId === pieceId) {
+      setSelectedPieceId(null);
+    }
+
     syncBoardState(nextBoard);
   };
 
-  // Click on player card on pitch or table
+  // Select / Swap piece on pitch or table
   const handleSelectPiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
     const piece = board.pieces.find((p) => p.id === pieceId);
@@ -270,7 +274,7 @@ export default function TacticalSetup({
     setSelectedPieceId((prev) => (prev === pieceId ? null : pieceId));
   };
 
-  // Click on empty pitch cell to move piece
+  // Click on empty cell on pitch to move selected piece
   const handlePitchCellClick = (x: number, y: number) => {
     if (isReadOnly || isCurrentTeamReady || !selectedPieceId) return;
     const isInHalf = isWhite ? y >= 8 && y <= 13 : y >= 1 && y <= 6;
@@ -296,10 +300,20 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
-  // Toggle ready
+  // Toggle ready status
   const handleToggleReady = () => {
     if (isOverBudget) {
-      alert(`Đội hình vượt quá ngân sách lương quy định (${SALARY_CAP} điểm)! Vui lòng điều chỉnh.`);
+      alert(`Đội hình vượt quá ngân sách lương (${SALARY_CAP} điểm)! Vui lòng điều chỉnh.`);
+      return;
+    }
+
+    if (kingCount !== 1) {
+      alert('Mỗi đội bắt buộc phải có ĐÚNG 1 con Vua (Thủ Môn)!');
+      return;
+    }
+
+    if (currentTeamPieces.length < MIN_PIECES_PER_TEAM) {
+      alert(`Đội hình cần tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ để ra sân!`);
       return;
     }
 
@@ -320,8 +334,19 @@ export default function TacticalSetup({
     }
   };
 
-  // Start match
+  // Start game
   const handleStartGame = () => {
+    const whitePieces = board.pieces.filter((p) => p.team === 'white');
+    const blackPieces = board.pieces.filter((p) => p.team === 'black');
+
+    const whiteKings = whitePieces.filter((p) => p.typeId === 'king').length;
+    const blackKings = blackPieces.filter((p) => p.typeId === 'king').length;
+
+    if (whiteKings !== 1 || blackKings !== 1) {
+      alert('Mỗi đội bắt buộc phải có ĐÚNG 1 con Vua (Thủ Môn)!');
+      return;
+    }
+
     if (!whiteReady || !blackReady) {
       alert('Cả 2 đội đều phải xác nhận Sẵn Sàng (✓) trước khi bắt đầu trận đấu!');
       return;
@@ -367,6 +392,10 @@ export default function TacticalSetup({
   };
 
   const bothReady = whiteReady && blackReady;
+
+  // Selected piece info
+  const selectedPiece = board.pieces.find((p) => p.id === selectedPieceId);
+  const selectedPieceDef = selectedPiece ? getPieceDefinition(selectedPiece.typeId) : null;
 
   // Grid coordinates for the active team's half pitch
   const startY = isWhite ? 7 : 0;
@@ -433,7 +462,7 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* Kick Off Button or Ready Banner */}
+        {/* Kick Off Button or Ready Status */}
         <div className="flex items-center gap-2">
           {bothReady ? (
             <button
@@ -445,7 +474,7 @@ export default function TacticalSetup({
           ) : (
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-amber-300/90 bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-500/30">
               <span>⏳</span>
-              <span>Cả 2 đội cần bấm [Xác Nhận Đội Hình] để mở khóa Kick Off</span>
+              <span>Cả 2 đội cần bấm [Xác Nhận Đội Hình] để bắt đầu</span>
             </div>
           )}
 
@@ -458,183 +487,123 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main FM Tactical Management Canvas */}
+      {/* Main Layout: Left Team Pieces List + Right Grass Pitch */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: Simplified Clean Table (~ 45% width / 5 cols) */}
+        {/* LEFT COLUMN: Clean List of Team Pieces with Add/Delete actions (~ 45% width / 5 cols) */}
         <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-          {/* Sub-Tabs Header */}
-          <div className="flex items-center bg-[#0d121f] border-b border-slate-800">
-            <button
-              onClick={() => setActiveSubTab('player')}
-              className={`flex-1 py-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
-                activeSubTab === 'player'
-                  ? 'bg-[#bef264] text-slate-950 border-[#bef264] shadow-[0_0_15px_rgba(190,242,100,0.3)]'
-                  : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
-              }`}
-            >
-              DANH SÁCH QUÂN
-            </button>
+          {/* Header Bar */}
+          <div className="p-3.5 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-black text-white">
+                DANH SÁCH QUÂN CỜ ({currentTeamPieces.length}/{MAX_PIECES_PER_TEAM})
+              </span>
+            </div>
 
-            <button
-              onClick={() => setActiveSubTab('formation')}
-              className={`flex-1 py-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
-                activeSubTab === 'formation'
-                  ? 'bg-[#bef264] text-slate-950 border-[#bef264]'
-                  : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
-              }`}
-            >
-              SƠ ĐỒ (4-4-2...)
-            </button>
-
-            <button
-              onClick={() => setActiveSubTab('tactics')}
-              className={`flex-1 py-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${
-                activeSubTab === 'tactics'
-                  ? 'bg-[#bef264] text-slate-950 border-[#bef264]'
-                  : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
-              }`}
-            >
-              TÊN ĐỘI
-            </button>
+            {/* Add Piece Button */}
+            {!isReadOnly && !isCurrentTeamReady && (
+              <button
+                disabled={currentTeamPieces.length >= MAX_PIECES_PER_TEAM}
+                onClick={() => setIsAddPieceModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md disabled:opacity-40"
+              >
+                <span>➕</span> THÊM QUÂN
+              </button>
+            )}
           </div>
 
-          {/* SubTab 1: Clean Player List (Only Name and Piece Types) */}
-          {activeSubTab === 'player' && (
-            <div className="flex-1 flex flex-col p-3">
-              {/* Table Column Headers: Chỉ giữ Vị Trí, Tên Quân, Loại Quân, Chi Phí, Đổi */}
-              <div className="grid grid-cols-12 gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-1">
-                <span className="col-span-2">VỊ TRÍ</span>
-                <span className="col-span-5">TÊN QUÂN CỜ</span>
-                <span className="col-span-3 text-center">LOẠI QUÂN</span>
-                <span className="col-span-2 text-right">ĐỔI QUÂN</span>
-              </div>
+          {/* Piece List Rows */}
+          <div className="flex-1 p-3 overflow-y-auto space-y-1.5 custom-scrollbar max-h-[440px]">
+            {currentTeamPieces.map((piece, idx) => {
+              const def = getPieceDefinition(piece.typeId);
+              const isSelected = selectedPieceId === piece.id;
+              const isKing = piece.typeId === 'king';
 
-              {/* 11 Players Row List */}
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar max-h-[460px]">
-                {currentRoster.pieces.map((pId, idx) => {
-                  const def = getPieceDefinition(pId);
-                  const pieceInstance = board.pieces.find(
-                    (p) => p.team === activeTabTeam && p.formationIndex === idx
-                  );
-                  const isSelected = selectedPieceId === pieceInstance?.id;
-
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        if (pieceInstance) handleSelectPiece(pieceInstance.id);
-                      }}
-                      className={`grid grid-cols-12 gap-1 items-center px-2.5 py-2.5 rounded-xl transition-all cursor-pointer border ${
-                        isSelected
-                          ? 'bg-[#bef264]/20 border-[#bef264] ring-1 ring-[#bef264] text-white shadow-lg'
-                          : 'bg-[#10172a]/70 border-slate-850 hover:bg-[#1e293b]/80 text-slate-300'
-                      }`}
-                    >
-                      {/* Vị trí BP */}
-                      <div className="col-span-2 flex items-center gap-1">
-                        <span className="text-xs font-black text-lime-400 font-mono">
-                          {POSITION_LABELS[idx]}
+              return (
+                <div
+                  key={piece.id}
+                  onClick={() => handleSelectPiece(piece.id)}
+                  className={`flex items-center justify-between p-2.5 rounded-2xl transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[#bef264]/20 border-[#bef264] ring-2 ring-[#bef264] text-white shadow-lg'
+                      : 'bg-[#10172a]/80 border-slate-800 hover:bg-[#1e293b]/90 text-slate-300'
+                  }`}
+                >
+                  {/* Left: Symbol & Name & Role */}
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-xl shrink-0 shadow">
+                      {def?.symbol || '♟'}
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-bold text-white truncate">
+                          {def?.vietnameseName}
                         </span>
+                        {isKing && (
+                          <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.2 rounded font-black border border-yellow-500/30">
+                            DUY NHẤT
+                          </span>
+                        )}
                       </div>
-
-                      {/* Tên Quân Cờ + Symbol */}
-                      <div className="col-span-5 flex items-center gap-2.5 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-lg shrink-0 shadow">
-                          {def?.symbol || '♟'}
-                        </div>
-                        <div className="truncate">
-                          <div className="text-xs font-bold text-white truncate">
-                            {def?.vietnameseName || def?.name}
-                          </div>
-                          <div className="text-[10px] text-amber-300/90 font-mono font-bold">
-                            {def?.cost || 0} điểm
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Loại Quân (Role) */}
-                      <div className="col-span-3 flex justify-center">
-                        <span
-                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
-                            def?.role === 'GK'
-                              ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                              : def?.role === 'FWD'
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                              : def?.role === 'MID'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}
-                        >
-                          {def?.role === 'GK'
-                            ? 'Thủ Môn'
-                            : def?.role === 'DEF'
-                            ? 'Hậu Vệ'
-                            : def?.role === 'MID'
-                            ? 'Tiền Vệ'
-                            : 'Tiền Đạo'}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-amber-300 font-mono font-bold">
+                          {def?.cost || 0} điểm
                         </span>
-                      </div>
-
-                      {/* Nút Đổi Quân */}
-                      <div className="col-span-2 flex items-center justify-end">
-                        <button
-                          type="button"
-                          disabled={isReadOnly || isCurrentTeamReady}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedSlotForPick(idx);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white font-bold text-[10px] border border-slate-700 transition-colors"
-                        >
-                          Đổi
-                        </button>
+                        <span className="text-[10px] text-slate-400">
+                          Vị trí: ({piece.position.x}, {piece.position.y})
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                  </div>
 
-          {/* SubTab 2: Formations Presets */}
-          {activeSubTab === 'formation' && (
-            <div className="p-4 flex flex-col gap-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-lime-400 mb-1">
-                LỰA CHỌN SƠ ĐỒ CHIẾN THUẬT:
-              </h4>
-              <div className="grid grid-cols-3 gap-2.5">
-                {(['4-4-2', '4-3-3', '3-5-2'] as const).map((preset) => (
-                  <button
-                    key={preset}
-                    disabled={isReadOnly || isCurrentTeamReady}
-                    onClick={() => handleApplyPreset(preset)}
-                    className="py-3 px-2 rounded-2xl bg-[#10172a] hover:bg-[#1e293b] border-2 border-slate-700 hover:border-lime-400 flex flex-col items-center justify-center gap-1 transition-all"
-                  >
-                    <span className="text-lg font-black text-white">{preset}</span>
-                    <span className="text-[10px] text-slate-400">Đội hình chuẩn</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                  {/* Right: Delete button */}
+                  {!isReadOnly && !isCurrentTeamReady && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!isKing ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePiece(piece.id);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-red-950/60 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
+                        >
+                          <span>🗑️</span> Xóa
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-bold px-2 py-1 bg-slate-950 rounded-lg">
+                          🔒 Cố định
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-          {/* SubTab 3: Team Name */}
-          {activeSubTab === 'tactics' && (
-            <div className="p-4 flex flex-col gap-3 text-xs text-slate-300">
-              <div className="bg-[#10172a] p-3 rounded-2xl border border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Tên Đội Bóng:</span>
-                <input
-                  type="text"
-                  disabled={isReadOnly || isCurrentTeamReady}
-                  value={currentRoster.teamName}
-                  onChange={(e) => {
-                    const next = { ...currentRoster, teamName: e.target.value };
-                    if (isWhite) setWhiteRoster(next);
-                    else setBlackRoster(next);
-                  }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white mt-1 outline-none focus:border-lime-400"
-                />
+          {/* Selected Piece Action Box (Quick Move / Info) */}
+          {selectedPiece && selectedPieceDef && (
+            <div className="mx-3 mb-2 p-2.5 bg-slate-950/90 rounded-2xl border border-lime-400/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{selectedPieceDef.symbol}</span>
+                <div>
+                  <span className="text-xs font-bold text-white">
+                    Đang chọn: {selectedPieceDef.vietnameseName}
+                  </span>
+                  <p className="text-[10px] text-lime-300">
+                    Nhấp vào <strong>ô trống</strong> trên sân để di dời, hoặc nhấp <strong>quân khác</strong> để hoán đổi
+                  </p>
+                </div>
               </div>
+
+              {selectedPiece.typeId !== 'king' && !isReadOnly && !isCurrentTeamReady && (
+                <button
+                  onClick={() => handleDeletePiece(selectedPiece.id)}
+                  className="px-2.5 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded-lg text-xs font-bold border border-red-500/40"
+                >
+                  Xóa quân
+                </button>
+              )}
             </div>
           )}
 
@@ -682,22 +651,22 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Clean Player Cards (~ 55% width / 7 cols) */}
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Clean Piece Cards (~ 55% width / 7 cols) */}
         <div className="lg:col-span-7 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge */}
           <div className="flex items-center justify-between px-2 mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-lime-400 animate-pulse" />
               <span className="text-xs font-black text-white uppercase tracking-wider">
-                SƠ ĐỒ CHIẾN THUẬT: {isWhite ? 'ĐỘI TRẮNG (SÂN DƯỚI)' : 'ĐỘI ĐỎ (SÂN TRÊN)'}
+                SÂN BỐ TRÍ: {isWhite ? 'ĐỘI TRẮNG (SÂN DƯỚI)' : 'ĐỘI ĐỎ (SÂN TRÊN)'}
               </span>
             </div>
             <span className="text-[10px] text-slate-400 hidden sm:inline">
-              👉 Nhấp vào thẻ quân cờ để hoán đổi hoặc nhấp ô trống để di dời
+              👉 Nhấp quân để chọn/hoán đổi, nhấp ô trống để dời
             </span>
           </div>
 
-          {/* Grass Field Canvas with Clean Striped Turf & Grid */}
+          {/* Grass Field Canvas */}
           <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 bg-[#15803d] flex items-center justify-center p-1 sm:p-2 min-h-[480px]">
             {/* Field Pattern & Markings */}
             <div
@@ -759,7 +728,7 @@ export default function TacticalSetup({
                         <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30 pointer-events-none" />
                       )}
 
-                      {/* CLEAN RECTANGULAR PIECE CARD (Symbol, Name & Role) */}
+                      {/* CLEAN PIECE CARD ON PITCH */}
                       {piece && (
                         <div
                           onClick={(e) => {
@@ -772,20 +741,20 @@ export default function TacticalSetup({
                               : 'bg-[#18233c]/95 hover:bg-[#1e293b] border border-slate-600 hover:scale-105'
                           }`}
                         >
-                          {/* Top part: Portrait Symbol */}
+                          {/* Top Symbol */}
                           <div className="flex-1 flex items-center justify-center w-full pt-1">
                             <span className="text-xl sm:text-2xl md:text-3xl drop-shadow-md">
                               {getPieceDefinition(piece.typeId)?.symbol || '♟'}
                             </span>
                           </div>
 
-                          {/* Bottom Dark Bar: Clean Vietnamese Piece Name & Role */}
+                          {/* Bottom Bar: Name & Points */}
                           <div className="w-full bg-[#0d1322] px-1 py-0.5 flex items-center justify-between border-t border-slate-700/80">
                             <span className="text-[8px] sm:text-[9px] font-black text-slate-200 truncate max-w-[42px] sm:max-w-[50px]">
                               {getPieceDefinition(piece.typeId)?.vietnameseName.split(' ')[0] || getPieceDefinition(piece.typeId)?.name}
                             </span>
-                            <span className="text-[8px] sm:text-[9px] font-black text-lime-400 uppercase">
-                              {getPieceDefinition(piece.typeId)?.role}
+                            <span className="text-[8px] sm:text-[9px] font-black text-lime-400 font-mono">
+                              {getPieceDefinition(piece.typeId)?.cost || 0}đ
                             </span>
                           </div>
                         </div>
@@ -799,11 +768,11 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Piece Picker Popover Modal */}
-      {selectedSlotForPick !== null && (
+      {/* ADD PIECE MODAL (Market Picker) */}
+      {isAddPieceModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
-          onClick={() => setSelectedSlotForPick(null)}
+          onClick={() => setIsAddPieceModalOpen(false)}
         >
           <div
             className="bg-[#141b2d] border-2 border-lime-400 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
@@ -812,17 +781,17 @@ export default function TacticalSetup({
             <div className="p-4 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-black text-lime-400 uppercase">
-                  CHỌN QUÂN CỜ CHO: {POSITION_FULL_NAMES[selectedSlotForPick]}
+                  THÊM QUÂN CỜ VÀO ĐỘI {isWhite ? 'TRẮNG' : 'ĐỎ'}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  {currentRoster.teamName} • Ngân sách còn lại:{' '}
+                  Số lượng hiện tại: {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} • Ngân sách còn lại:{' '}
                   <span className={remainingBudget < 0 ? 'text-red-400 font-bold' : 'text-lime-400 font-bold'}>
                     {remainingBudget} điểm
                   </span>
                 </p>
               </div>
               <button
-                onClick={() => setSelectedSlotForPick(null)}
+                onClick={() => setIsAddPieceModalOpen(false)}
                 className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs font-bold"
               >
                 ✕
@@ -831,22 +800,19 @@ export default function TacticalSetup({
 
             <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-y-auto max-h-[60vh]">
               {allAvailablePieces.map((p) => {
-                const currentPieceInSlot = currentRoster.pieces[selectedSlotForPick];
-                const currentSlotCost = getPieceDefinition(currentPieceInSlot)?.cost || 0;
-                const costDiff = p.cost - currentSlotCost;
-                const isAffordable = remainingBudget - costDiff >= 0;
-                const isCurrent = currentPieceInSlot === p.id;
+                const isKing = p.id === 'king';
+                const cannotAddKing = isKing && kingCount >= 1;
+                const isAffordable = remainingBudget >= p.cost;
+                const isAvailable = !cannotAddKing && isAffordable;
 
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    disabled={!isAffordable && !isCurrent}
-                    onClick={() => handleSelectPieceForSlot(p.id)}
+                    disabled={!isAvailable}
+                    onClick={() => handleAddPiece(p.id)}
                     className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all ${
-                      isCurrent
-                        ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400/50 text-white'
-                        : !isAffordable
+                      !isAvailable
                         ? 'opacity-40 bg-slate-950 border-slate-800 cursor-not-allowed text-slate-500'
                         : 'bg-slate-900/80 border-slate-700 hover:border-lime-400/60 hover:bg-slate-850 text-white'
                     }`}
@@ -865,13 +831,9 @@ export default function TacticalSetup({
                         <span className="text-xs font-black text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
                           {p.cost}đ
                         </span>
-                        {costDiff !== 0 && (
-                          <span
-                            className={`text-[9px] mt-0.5 font-bold ${
-                              costDiff > 0 ? 'text-red-400' : 'text-lime-400'
-                            }`}
-                          >
-                            {costDiff > 0 ? `+${costDiff}đ` : `${costDiff}đ`}
+                        {cannotAddKing && (
+                          <span className="text-[9px] text-red-400 font-bold mt-0.5">
+                            Đã có 1 Vua
                           </span>
                         )}
                       </div>
@@ -893,7 +855,7 @@ export default function TacticalSetup({
 
             <div className="p-3 bg-[#0d121f] border-t border-slate-800 flex justify-end">
               <button
-                onClick={() => setSelectedSlotForPick(null)}
+                onClick={() => setIsAddPieceModalOpen(false)}
                 className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300"
               >
                 Đóng
