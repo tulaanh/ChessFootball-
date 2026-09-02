@@ -34,7 +34,7 @@ interface ChessFootballGameProps {
   onlineRole?: TeamColor | null;
   onlineRoomId?: string | null;
   onBackToMenu?: () => void;
-  onBackToSetup?: () => void;
+  onBackToSetup?: (boardToAdjust?: BoardState) => void;
 }
 
 export default function ChessFootballGame({
@@ -257,7 +257,7 @@ export default function ChessFootballGame({
 
           {onBackToSetup && (
             <button
-              onClick={onBackToSetup}
+              onClick={() => onBackToSetup(board)}
               className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/30 flex items-center gap-1"
             >
               <span>⚙️</span> Xếp Đội Hình
@@ -551,14 +551,23 @@ export default function ChessFootballGame({
         </div>
       </div>
 
-      {/* Goal Celebration Overlay */}
+      {/* Goal Celebration Banner */}
       {showGoalBanner && board.lastGoalScorer && (
         <GoalCelebration
           team={board.lastGoalScorer.team}
           scorerName={board.lastGoalScorer.pieceName}
           onClose={() => {
             setShowGoalBanner(false);
-            setBoard((prev) => ({ ...prev, lastGoalScorer: undefined }));
+            const boardToAdjust: BoardState = {
+              ...board,
+              lastGoalScorer: undefined,
+              selectedPieceId: null,
+              activeAction: null,
+            };
+            setBoard(boardToAdjust);
+            if (!board.winner && onBackToSetup) {
+              onBackToSetup(boardToAdjust);
+            }
           }}
         />
       )}

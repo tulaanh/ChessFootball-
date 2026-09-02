@@ -35,17 +35,24 @@ export default function GoalCelebration({ team, scorerName, onClose }: GoalCeleb
         <h1 className={`text-4xl md:text-6xl font-black tracking-widest uppercase py-3 px-6 rounded-2xl shadow-xl ${bgColor}`}>
           VÀOOOOOO!
         </h1>
-        <div className="mt-4 bg-slate-900/90 text-white p-4 rounded-xl border border-yellow-400/40">
+        <div className="mt-4 bg-slate-900/90 text-white p-4 rounded-xl border border-yellow-400/40 space-y-2">
           <p className="text-sm font-semibold tracking-wider text-yellow-300 uppercase">
             {teamLabel}
           </p>
           <p className="text-xl md:text-2xl font-bold mt-1">
             Ghi bàn bởi: <span className="text-yellow-400">{scorerName}</span>
           </p>
-          <p className="text-xs text-slate-300 mt-2">
-            Bóng đã được đưa trở lại chấm giao bóng giữa sân!
+          <p className="text-xs text-lime-300 font-bold">
+            📋 Sau bàn thắng: 2 đội có quyền tái bố trí vị trí các quân cờ!
           </p>
         </div>
+
+        <button
+          onClick={onClose}
+          className="mt-4 px-6 py-2 bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg"
+        >
+          📋 Bố Trí Lại Đội Hình Ngay ➔
+        </button>
       </div>
     </div>
   );

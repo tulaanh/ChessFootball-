@@ -20,6 +20,7 @@ import { multiplayerService, NetworkPacket } from '@/services/multiplayer';
 import PieceRegistryModal from './PieceRegistryModal';
 
 interface TacticalSetupProps {
+  initialBoard?: BoardState;
   initialWhiteRoster?: TeamRoster;
   initialBlackRoster?: TeamRoster;
   multiplayerMode?: 'local' | 'online';
@@ -33,6 +34,7 @@ const SALARY_CAP = 150;
 const MAX_PIECES_PER_TEAM = 11;
 
 export default function TacticalSetup({
+  initialBoard,
   initialWhiteRoster = DEFAULT_WHITE_ROSTER,
   initialBlackRoster = DEFAULT_BLACK_ROSTER,
   multiplayerMode = 'local',
@@ -45,10 +47,10 @@ export default function TacticalSetup({
     multiplayerMode === 'online' && onlineRole ? onlineRole : 'white'
   );
 
-  const [whiteRoster, setWhiteRoster] = useState<TeamRoster>(initialWhiteRoster);
-  const [blackRoster, setBlackRoster] = useState<TeamRoster>(initialBlackRoster);
+  const [whiteRoster, setWhiteRoster] = useState<TeamRoster>(initialBoard?.whiteRoster || initialWhiteRoster);
+  const [blackRoster, setBlackRoster] = useState<TeamRoster>(initialBoard?.blackRoster || initialBlackRoster);
   const [board, setBoard] = useState<BoardState>(() =>
-    createInitialBoard(initialWhiteRoster, initialBlackRoster)
+    initialBoard || createInitialBoard(initialWhiteRoster, initialBlackRoster)
   );
 
   const [whiteReady, setWhiteReady] = useState(false);
@@ -414,12 +416,16 @@ export default function TacticalSetup({
       abilityCooldown: 0,
     }));
 
+    const isMidMatchAdjustment = (board.score.white > 0 || board.score.black > 0) || Boolean(board.turnNumber && board.turnNumber > 1);
+    const nextTurn = isMidMatchAdjustment ? (board.currentTurn || 'white') : 'white';
+
     const nextBoard: BoardState = {
       ...board,
       phase: 'playing',
       savedFormation,
       pieces: savedFormation,
-      currentTurn: 'white',
+      ballPosition: { x: 5, y: 7 },
+      currentTurn: nextTurn,
       remainingAP: 2,
       selectedPieceId: null,
       activeAction: null,
@@ -428,10 +434,13 @@ export default function TacticalSetup({
       commentary: [
         {
           id: `c_${Date.now()}`,
-          text: '🔔 Trọng tài đã nổi còi bắt đầu trận đấu! Đội Trắng giao bóng (2 lượt/vòng đấu).',
+          text: isMidMatchAdjustment
+            ? `🔔 Trận đấu tiếp tục sau bàn thắng! Đội ${nextTurn === 'white' ? 'Trắng' : 'Đỏ'} giao bóng tại giữa sân.`
+            : '🔔 Trọng tài đã nổi còi bắt đầu trận đấu! Đội Trắng giao bóng (2 lượt/vòng đấu).',
           type: 'whistle',
-          timestamp: '00:00',
+          timestamp: `${(board.turnNumber || 1) * 3}'`,
         },
+        ...board.commentary,
       ],
     };
 
@@ -447,6 +456,7 @@ export default function TacticalSetup({
   };
 
   const bothReady = whiteReady && blackReady;
+  const isMidMatchAdjustment = (board.score.white > 0 || board.score.black > 0) || Boolean(board.turnNumber && board.turnNumber > 1);
 
   // Selected piece info
   const selectedPiece = board.pieces.find((p) => p.id === selectedPieceId);
@@ -472,6 +482,16 @@ export default function TacticalSetup({
           >
             <span>←</span> Menu
           </button>
+
+          {/* Mid-Match Score Indicator */}
+          {isMidMatchAdjustment && (
+            <div className="px-3 py-1 bg-amber-500/10 border border-amber-400/40 rounded-xl text-xs font-black text-amber-300 flex items-center gap-2 shadow">
+              <span>⚽ TỈ SỐ:</span>
+              <span className="font-mono text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                ⚪ {board.score.white} - {board.score.black} 🔴
+              </span>
+            </div>
+          )}
 
           {/* Dual Team Switcher Tabs */}
           <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
@@ -530,12 +550,12 @@ export default function TacticalSetup({
               onClick={handleStartGame}
               className="px-6 py-2 bg-gradient-to-r from-lime-400 via-emerald-400 to-green-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-[0_0_25px_rgba(163,230,53,0.6)] uppercase tracking-wider flex items-center gap-2 animate-bounce"
             >
-              <span>🟢</span> BẮT ĐẦU TRẬN ĐẤU (KICK OFF)
+              <span>🟢</span> {isMidMatchAdjustment ? 'TIẾP TỤC TRẬN ĐẤU (GIAO BÓNG)' : 'BẮT ĐẦU TRẬN ĐẤU (KICK OFF)'}
             </button>
           ) : (
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-amber-300/90 bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-500/30">
               <span>⏳</span>
-              <span>Cả 2 đội cần bấm [Xác Nhận Đội Hình] để bắt đầu</span>
+              <span>Cả 2 đội cần bấm [Xác Nhận Đội Hình] để {isMidMatchAdjustment ? 'tiếp tục' : 'bắt đầu'}</span>
             </div>
           )}
 

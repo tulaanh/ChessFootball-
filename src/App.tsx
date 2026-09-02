@@ -46,7 +46,10 @@ export default function App() {
     setCurrentScreen('menu');
   };
 
-  const handleBackToSetup = () => {
+  const handleBackToSetup = (boardToAdjust?: BoardState) => {
+    if (boardToAdjust) {
+      setCurrentBoard(boardToAdjust);
+    }
     setCurrentScreen('setup');
   };
 
@@ -62,6 +65,7 @@ export default function App() {
 
         {currentScreen === 'setup' && (
           <TacticalSetup
+            initialBoard={currentBoard}
             initialWhiteRoster={whiteRoster}
             initialBlackRoster={blackRoster}
             multiplayerMode={multiplayerMode}
