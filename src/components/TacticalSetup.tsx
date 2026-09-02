@@ -369,8 +369,6 @@ export default function TacticalSetup({
   const bothReady = whiteReady && blackReady;
 
   // Grid coordinates for the active team's half pitch
-  // White team: y from 7 (half line) to 14 (goal)
-  // Black team: y from 0 (goal) to 7 (half line)
   const startY = isWhite ? 7 : 0;
   const endY = isWhite ? 14 : 7;
   const rowIndices = Array.from({ length: endY - startY + 1 }, (_, i) => startY + i);
@@ -387,7 +385,7 @@ export default function TacticalSetup({
             <span>←</span> Menu
           </button>
 
-          {/* Dual Team Switcher Tabs (Like FM Header) */}
+          {/* Dual Team Switcher Tabs */}
           <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
             <button
               onClick={() => {
@@ -460,11 +458,11 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Fullscreen FM Tactical Management Canvas */}
+      {/* Main FM Tactical Management Canvas */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: FM Tactical Roster Table (~ 45% width / 5 cols) */}
+        {/* LEFT COLUMN: Simplified Clean Table (~ 45% width / 5 cols) */}
         <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-          {/* FM Sub-Tabs Header ([PLAYER] [FORMATION] [TACTICS]) */}
+          {/* Sub-Tabs Header */}
           <div className="flex items-center bg-[#0d121f] border-b border-slate-800">
             <button
               onClick={() => setActiveSubTab('player')}
@@ -474,7 +472,7 @@ export default function TacticalSetup({
                   : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
               }`}
             >
-              PLAYER (CẦU THỦ)
+              DANH SÁCH QUÂN
             </button>
 
             <button
@@ -485,7 +483,7 @@ export default function TacticalSetup({
                   : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
               }`}
             >
-              FORMATION (SƠ ĐỒ)
+              SƠ ĐỒ (4-4-2...)
             </button>
 
             <button
@@ -496,24 +494,23 @@ export default function TacticalSetup({
                   : 'text-slate-400 hover:text-white border-transparent hover:bg-slate-850'
               }`}
             >
-              TACTICS (QUỸ LƯƠNG)
+              TÊN ĐỘI
             </button>
           </div>
 
-          {/* SubTab 1: FM Player List Table */}
+          {/* SubTab 1: Clean Player List (Only Name and Piece Types) */}
           {activeSubTab === 'player' && (
             <div className="flex-1 flex flex-col p-3">
-              {/* Table Column Headers */}
+              {/* Table Column Headers: Chỉ giữ Vị Trí, Tên Quân, Loại Quân, Chi Phí, Đổi */}
               <div className="grid grid-cols-12 gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-1">
-                <span className="col-span-2">BP</span>
-                <span className="col-span-5">NAME (TÊN QUÂN)</span>
-                <span className="col-span-2 text-center">ROLE</span>
-                <span className="col-span-1 text-center">PTS</span>
-                <span className="col-span-2 text-right">FIT/MOR</span>
+                <span className="col-span-2">VỊ TRÍ</span>
+                <span className="col-span-5">TÊN QUÂN CỜ</span>
+                <span className="col-span-3 text-center">LOẠI QUÂN</span>
+                <span className="col-span-2 text-right">ĐỔI QUÂN</span>
               </div>
 
               {/* 11 Players Row List */}
-              <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar max-h-[460px]">
+              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar max-h-[460px]">
                 {currentRoster.pieces.map((pId, idx) => {
                   const def = getPieceDefinition(pId);
                   const pieceInstance = board.pieces.find(
@@ -527,38 +524,38 @@ export default function TacticalSetup({
                       onClick={() => {
                         if (pieceInstance) handleSelectPiece(pieceInstance.id);
                       }}
-                      className={`grid grid-cols-12 gap-1 items-center px-2 py-2 rounded-xl transition-all cursor-pointer border ${
+                      className={`grid grid-cols-12 gap-1 items-center px-2.5 py-2.5 rounded-xl transition-all cursor-pointer border ${
                         isSelected
                           ? 'bg-[#bef264]/20 border-[#bef264] ring-1 ring-[#bef264] text-white shadow-lg'
                           : 'bg-[#10172a]/70 border-slate-850 hover:bg-[#1e293b]/80 text-slate-300'
                       }`}
                     >
-                      {/* BP Position Badge */}
+                      {/* Vị trí BP */}
                       <div className="col-span-2 flex items-center gap-1">
                         <span className="text-xs font-black text-lime-400 font-mono">
                           {POSITION_LABELS[idx]}
                         </span>
                       </div>
 
-                      {/* Name & Avatar Icon */}
-                      <div className="col-span-5 flex items-center gap-2 overflow-hidden">
-                        <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-base shrink-0 shadow">
+                      {/* Tên Quân Cờ + Symbol */}
+                      <div className="col-span-5 flex items-center gap-2.5 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-lg shrink-0 shadow">
                           {def?.symbol || '♟'}
                         </div>
                         <div className="truncate">
                           <div className="text-xs font-bold text-white truncate">
-                            {def?.name.toUpperCase() || pId}
+                            {def?.vietnameseName || def?.name}
                           </div>
-                          <div className="text-[10px] text-amber-300/80 truncate">
-                            {def?.vietnameseName}
+                          <div className="text-[10px] text-amber-300/90 font-mono font-bold">
+                            {def?.cost || 0} điểm
                           </div>
                         </div>
                       </div>
 
-                      {/* Role Badge */}
-                      <div className="col-span-2 flex justify-center">
+                      {/* Loại Quân (Role) */}
+                      <div className="col-span-3 flex justify-center">
                         <span
-                          className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
                             def?.role === 'GK'
                               ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
                               : def?.role === 'FWD'
@@ -568,25 +565,18 @@ export default function TacticalSetup({
                               : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           }`}
                         >
-                          {def?.role}
+                          {def?.role === 'GK'
+                            ? 'Thủ Môn'
+                            : def?.role === 'DEF'
+                            ? 'Hậu Vệ'
+                            : def?.role === 'MID'
+                            ? 'Tiền Vệ'
+                            : 'Tiền Đạo'}
                         </span>
                       </div>
 
-                      {/* Points / Rating (Cost) */}
-                      <div className="col-span-1 text-center">
-                        <span className="text-xs font-mono font-black text-amber-300">
-                          {def?.cost || 0}
-                        </span>
-                      </div>
-
-                      {/* FIT & MOR Icons (Style like FIFA/FM) */}
-                      <div className="col-span-2 flex items-center justify-end gap-1.5 text-xs">
-                        <div className="flex gap-0.5">
-                          <span className="w-1.5 h-3 bg-lime-400 rounded-sm transform skew-x-[-12deg]" />
-                          <span className="w-1.5 h-3 bg-lime-400 rounded-sm transform skew-x-[-12deg]" />
-                          <span className="w-1.5 h-3 bg-lime-400 rounded-sm transform skew-x-[-12deg]" />
-                        </div>
-                        <span className="text-sm">😊</span>
+                      {/* Nút Đổi Quân */}
+                      <div className="col-span-2 flex items-center justify-end">
                         <button
                           type="button"
                           disabled={isReadOnly || isCurrentTeamReady}
@@ -594,7 +584,7 @@ export default function TacticalSetup({
                             e.stopPropagation();
                             setSelectedSlotForPick(idx);
                           }}
-                          className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold border border-slate-700"
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white font-bold text-[10px] border border-slate-700 transition-colors"
                         >
                           Đổi
                         </button>
@@ -628,7 +618,7 @@ export default function TacticalSetup({
             </div>
           )}
 
-          {/* SubTab 3: Tactics & Budget breakdown */}
+          {/* SubTab 3: Team Name */}
           {activeSubTab === 'tactics' && (
             <div className="p-4 flex flex-col gap-3 text-xs text-slate-300">
               <div className="bg-[#10172a] p-3 rounded-2xl border border-slate-800">
@@ -644,16 +634,6 @@ export default function TacticalSetup({
                   }}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white mt-1 outline-none focus:border-lime-400"
                 />
-              </div>
-
-              <div className="bg-[#10172a] p-3 rounded-2xl border border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Luật Tiền Trận:</span>
-                <p className="mt-1 leading-relaxed text-slate-300 text-[11px]">
-                  • Bạn có thể nhấp chọn một cầu thủ trên bảng hoặc trên sân cỏ để dời vị trí hoặc hoán đổi với cầu thủ khác.
-                </p>
-                <p className="mt-1 leading-relaxed text-slate-300 text-[11px]">
-                  • Quỹ lương 150 điểm cho phép bạn tự do tùy biến giữa các quân cờ mạnh yếu.
-                </p>
               </div>
             </div>
           )}
@@ -702,7 +682,7 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with FM Player Cards (~ 55% width / 7 cols) */}
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Clean Player Cards (~ 55% width / 7 cols) */}
         <div className="lg:col-span-7 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge */}
           <div className="flex items-center justify-between px-2 mb-2">
@@ -713,11 +693,11 @@ export default function TacticalSetup({
               </span>
             </div>
             <span className="text-[10px] text-slate-400 hidden sm:inline">
-              👉 Nhấp vào thẻ cầu thủ để hoán đổi hoặc nhấp ô trống để di dời
+              👉 Nhấp vào thẻ quân cờ để hoán đổi hoặc nhấp ô trống để di dời
             </span>
           </div>
 
-          {/* Grass Field Canvas with FM Striped Turf & Grid */}
+          {/* Grass Field Canvas with Clean Striped Turf & Grid */}
           <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 bg-[#15803d] flex items-center justify-center p-1 sm:p-2 min-h-[480px]">
             {/* Field Pattern & Markings */}
             <div
@@ -779,7 +759,7 @@ export default function TacticalSetup({
                         <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30 pointer-events-none" />
                       )}
 
-                      {/* FM-STYLE RECTANGULAR PLAYER CARD ON PITCH */}
+                      {/* CLEAN RECTANGULAR PIECE CARD (Symbol, Name & Role) */}
                       {piece && (
                         <div
                           onClick={(e) => {
@@ -792,20 +772,20 @@ export default function TacticalSetup({
                               : 'bg-[#18233c]/95 hover:bg-[#1e293b] border border-slate-600 hover:scale-105'
                           }`}
                         >
-                          {/* Top part: Portrait / Symbol */}
+                          {/* Top part: Portrait Symbol */}
                           <div className="flex-1 flex items-center justify-center w-full pt-1">
                             <span className="text-xl sm:text-2xl md:text-3xl drop-shadow-md">
                               {getPieceDefinition(piece.typeId)?.symbol || '♟'}
                             </span>
                           </div>
 
-                          {/* Bottom Dark Bar: NAME and RATING PTS (Exactly like screenshot: KRAHN 89) */}
+                          {/* Bottom Dark Bar: Clean Vietnamese Piece Name & Role */}
                           <div className="w-full bg-[#0d1322] px-1 py-0.5 flex items-center justify-between border-t border-slate-700/80">
-                            <span className="text-[8px] sm:text-[9px] font-black text-slate-200 truncate max-w-[36px] sm:max-w-[44px]">
-                              {getPieceDefinition(piece.typeId)?.name.substring(0, 7).toUpperCase()}
+                            <span className="text-[8px] sm:text-[9px] font-black text-slate-200 truncate max-w-[42px] sm:max-w-[50px]">
+                              {getPieceDefinition(piece.typeId)?.vietnameseName.split(' ')[0] || getPieceDefinition(piece.typeId)?.name}
                             </span>
-                            <span className="text-[9px] sm:text-[11px] font-black font-mono text-white">
-                              {getPieceDefinition(piece.typeId)?.cost || 0}
+                            <span className="text-[8px] sm:text-[9px] font-black text-lime-400 uppercase">
+                              {getPieceDefinition(piece.typeId)?.role}
                             </span>
                           </div>
                         </div>
