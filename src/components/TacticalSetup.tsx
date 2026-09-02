@@ -31,7 +31,6 @@ interface TacticalSetupProps {
 
 const SALARY_CAP = 150;
 const MAX_PIECES_PER_TEAM = 11;
-const MIN_PIECES_PER_TEAM = 5;
 
 export default function TacticalSetup({
   initialWhiteRoster = DEFAULT_WHITE_ROSTER,
@@ -55,7 +54,9 @@ export default function TacticalSetup({
   const [whiteReady, setWhiteReady] = useState(false);
   const [blackReady, setBlackReady] = useState(false);
 
+  // Interaction states
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
+  const [placingTypeId, setPlacingTypeId] = useState<string | null>(null);
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
   const allAvailablePieces = getAllPieces();
@@ -120,36 +121,12 @@ export default function TacticalSetup({
     }
   }, [multiplayerMode, onBackToMenu]);
 
-  // Find an empty position in the team's half
-  const findEmptyPositionInHalf = (team: TeamColor): Position | null => {
-    const isW = team === 'white';
-    const minY = isW ? 8 : 1;
-    const maxY = isW ? 13 : 6;
-
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = 1; x <= 9; x++) {
-        const isOccupied = board.pieces.some(
-          (p) => p.position.x === x && p.position.y === y && p.team === team
-        );
-        if (!isOccupied) {
-          return { x, y };
-        }
-      }
-    }
-    return null;
-  };
-
-  // Add 1 piece of a specific type
-  const handleAddPieceType = (typeId: string) => {
+  // Click on a piece type in the left catalog to select for placement
+  const handleSelectPieceTypeToPlace = (typeId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
 
     if (currentTeamPieces.length >= MAX_PIECES_PER_TEAM) {
       alert(`Đội hình đã đạt tối đa ${MAX_PIECES_PER_TEAM} quân cờ!`);
-      return;
-    }
-
-    if (typeId === 'king' && kingCount >= 1) {
-      alert('Mỗi đội chỉ được phép có duy nhất 1 con Vua (Thủ Môn)!');
       return;
     }
 
@@ -159,17 +136,36 @@ export default function TacticalSetup({
       return;
     }
 
-    const targetPos = findEmptyPositionInHalf(activeTabTeam);
-    if (!targetPos) {
-      alert('Không còn ô trống trên nửa sân để đặt quân!');
+    if (placingTypeId === typeId) {
+      setPlacingTypeId(null);
+    } else {
+      setPlacingTypeId(typeId);
+      setSelectedPieceId(null);
+    }
+  };
+
+  // Place the selected piece type onto an empty cell (x, y) on the pitch
+  const handlePlacePieceAtCell = (x: number, y: number) => {
+    if (!placingTypeId || isReadOnly || isCurrentTeamReady) return;
+
+    if (currentTeamPieces.length >= MAX_PIECES_PER_TEAM) {
+      alert(`Đội hình đã đủ ${MAX_PIECES_PER_TEAM} quân cờ!`);
+      setPlacingTypeId(null);
+      return;
+    }
+
+    const def = getPieceDefinition(placingTypeId);
+    if (totalCost + def.cost > SALARY_CAP) {
+      alert(`Vượt quá quỹ lương ${SALARY_CAP} điểm!`);
+      setPlacingTypeId(null);
       return;
     }
 
     const newPiece: PieceInstance = {
       id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      typeId: typeId,
+      typeId: placingTypeId,
       team: activeTabTeam,
-      position: targetPos,
+      position: { x, y },
       formationIndex: currentTeamPieces.length,
     };
 
@@ -194,23 +190,19 @@ export default function TacticalSetup({
     };
 
     syncBoardState(nextBoard);
+    setPlacingTypeId(null);
   };
 
-  // Remove a piece instance from the team
+  // Remove a piece instance from the team (No minimum limit restriction)
   const handleDeletePiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
 
     const pieceToDelete = board.pieces.find((p) => p.id === pieceId);
     if (!pieceToDelete) return;
 
-    // RULE: Exactly 1 King must remain
+    // RULE: King cannot be deleted
     if (pieceToDelete.typeId === 'king') {
-      alert('Không thể xóa Vua! Mỗi trận bắt buộc phải có duy nhất 1 con Vua làm Thủ Môn.');
-      return;
-    }
-
-    if (currentTeamPieces.length <= MIN_PIECES_PER_TEAM) {
-      alert(`Mỗi đội cần có tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ trên sân!`);
+      alert('Không thể xóa Vua! Mỗi đội bắt buộc phải có 1 con Vua làm Thủ Môn.');
       return;
     }
 
@@ -242,11 +234,16 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
-  // Select / Swap piece on pitch
+  // Select / Swap existing piece on pitch
   const handleSelectPiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
     const piece = board.pieces.find((p) => p.id === pieceId);
     if (!piece || piece.team !== activeTabTeam) return;
+
+    // If we are currently placing a new piece, cancel placing mode
+    if (placingTypeId) {
+      setPlacingTypeId(null);
+    }
 
     if (selectedPieceId && selectedPieceId !== pieceId) {
       const selectedP = board.pieces.find((p) => p.id === selectedPieceId);
@@ -272,9 +269,9 @@ export default function TacticalSetup({
     setSelectedPieceId((prev) => (prev === pieceId ? null : pieceId));
   };
 
-  // Click on empty cell on pitch to move selected piece
+  // Click on empty cell on pitch
   const handlePitchCellClick = (x: number, y: number) => {
-    if (isReadOnly || isCurrentTeamReady || !selectedPieceId) return;
+    if (isReadOnly || isCurrentTeamReady) return;
     const isInHalf = isWhite ? y >= 8 && y <= 13 : y >= 1 && y <= 6;
     if (!isInHalf) return;
 
@@ -287,15 +284,24 @@ export default function TacticalSetup({
       return;
     }
 
-    const nextBoard: BoardState = {
-      ...board,
-      pieces: board.pieces.map((p) =>
-        p.id === selectedPieceId ? { ...p, position: { x, y } } : p
-      ),
-      selectedPieceId: null,
-    };
-    setSelectedPieceId(null);
-    syncBoardState(nextBoard);
+    // If placing a new piece type -> place it at (x, y)
+    if (placingTypeId) {
+      handlePlacePieceAtCell(x, y);
+      return;
+    }
+
+    // If moving an existing selected piece -> move to (x, y)
+    if (selectedPieceId) {
+      const nextBoard: BoardState = {
+        ...board,
+        pieces: board.pieces.map((p) =>
+          p.id === selectedPieceId ? { ...p, position: { x, y } } : p
+        ),
+        selectedPieceId: null,
+      };
+      setSelectedPieceId(null);
+      syncBoardState(nextBoard);
+    }
   };
 
   // Toggle ready status
@@ -310,8 +316,8 @@ export default function TacticalSetup({
       return;
     }
 
-    if (currentTeamPieces.length < MIN_PIECES_PER_TEAM) {
-      alert(`Đội hình cần tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ để ra sân!`);
+    if (currentTeamPieces.length > MAX_PIECES_PER_TEAM) {
+      alert(`Số lượng quân cờ không được vượt quá ${MAX_PIECES_PER_TEAM} quân!`);
       return;
     }
 
@@ -321,6 +327,10 @@ export default function TacticalSetup({
     } else {
       setBlackReady(newReady);
     }
+
+    // Clear placement mode
+    setPlacingTypeId(null);
+    setSelectedPieceId(null);
 
     if (multiplayerMode === 'online') {
       multiplayerService.sendPacket({
@@ -342,6 +352,11 @@ export default function TacticalSetup({
 
     if (whiteKings !== 1 || blackKings !== 1) {
       alert('Mỗi đội bắt buộc phải có ĐÚNG 1 con Vua (Thủ Môn)!');
+      return;
+    }
+
+    if (whitePieces.length > MAX_PIECES_PER_TEAM || blackPieces.length > MAX_PIECES_PER_TEAM) {
+      alert(`Mỗi đội chỉ được có tối đa ${MAX_PIECES_PER_TEAM} quân cờ!`);
       return;
     }
 
@@ -395,8 +410,9 @@ export default function TacticalSetup({
   const selectedPiece = board.pieces.find((p) => p.id === selectedPieceId);
   const selectedPieceDef = selectedPiece ? getPieceDefinition(selectedPiece.typeId) : null;
 
-  // Available pieces that CAN BE ADDED (excluding King since King is strictly 1 and already on pitch)
+  // Available pieces that CAN BE ADDED (excluding King)
   const piecesAvailableToAdd = allAvailablePieces.filter((p) => p.id !== 'king');
+  const placingPieceDef = placingTypeId ? getPieceDefinition(placingTypeId) : null;
 
   // Grid coordinates for the active team's half pitch
   const startY = isWhite ? 7 : 0;
@@ -422,6 +438,7 @@ export default function TacticalSetup({
                 if (multiplayerMode === 'local' || onlineRole === 'white') {
                   setActiveTabTeam('white');
                   setSelectedPieceId(null);
+                  setPlacingTypeId(null);
                 }
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
@@ -444,6 +461,7 @@ export default function TacticalSetup({
                 if (multiplayerMode === 'local' || onlineRole === 'black') {
                   setActiveTabTeam('black');
                   setSelectedPieceId(null);
+                  setPlacingTypeId(null);
                 }
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
@@ -490,37 +508,70 @@ export default function TacticalSetup({
 
       {/* Main Layout: Left Available Pieces to Add + Right Grass Pitch */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (Kho quân cờ có thể thêm) (~ 45% width / 5 cols) */}
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 45% width / 5 cols) */}
         <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
-                <span>➕</span> KHO QUÂN CÓ THỂ THÊM
+                <span>➕</span> CÁC QUÂN CÓ THỂ THÊM
               </span>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Nhấp để tuyển quân cờ mới vào sân bóng
+                Bấm vào quân cờ để chọn, sau đó nhấp vào ô trống trên sân cỏ
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-lime-400 font-black px-2 py-1 rounded-xl bg-lime-950/80 border border-lime-500/40">
-                {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} Cầu Thủ
+                {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} Quân
               </span>
             </div>
           </div>
 
+          {/* Placement Guide Notification */}
+          {placingTypeId && placingPieceDef && (
+            <div className="mx-3 mt-3 p-2.5 bg-lime-950/80 border border-lime-400/80 rounded-2xl flex items-center justify-between animate-pulse shadow-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{placingPieceDef.symbol}</span>
+                <div>
+                  <span className="text-xs font-black text-white">
+                    Đang chọn: {placingPieceDef.vietnameseName}
+                  </span>
+                  <p className="text-[10px] text-lime-300">
+                    👉 Nhấp vào ô trống trên sân cỏ bên phải để đặt quân!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPlacingTypeId(null)}
+                className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] font-bold rounded-lg border border-slate-700"
+              >
+                Hủy
+              </button>
+            </div>
+          )}
+
           {/* Available Pieces List */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar max-h-[460px]">
+          <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar max-h-[440px]">
             {piecesAvailableToAdd.map((pieceDef) => {
               const countOnPitch = currentTeamPieces.filter((p) => p.typeId === pieceDef.id).length;
               const canAfford = remainingBudget >= pieceDef.cost;
               const isSquadFull = currentTeamPieces.length >= MAX_PIECES_PER_TEAM;
+              const isPlacingThis = placingTypeId === pieceDef.id;
               const canAdd = !isReadOnly && !isCurrentTeamReady && !isSquadFull && canAfford;
 
               return (
                 <div
                   key={pieceDef.id}
-                  className="flex items-center justify-between p-3 rounded-2xl border border-slate-700/80 bg-[#10172a] hover:border-lime-400/50 transition-all shadow-sm"
+                  onClick={() => {
+                    if (canAdd) handleSelectPieceTypeToPlace(pieceDef.id);
+                  }}
+                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                    isPlacingThis
+                      ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)] text-white'
+                      : canAdd
+                      ? 'bg-[#10172a] border-slate-700/80 hover:border-lime-400/60 hover:bg-[#18243c] text-slate-200 shadow-sm'
+                      : 'bg-[#0d121f]/60 border-slate-850 opacity-40 cursor-not-allowed text-slate-500'
+                  }`}
                 >
                   {/* Left: Symbol & Name & Role */}
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -555,15 +606,22 @@ export default function TacticalSetup({
                     </div>
                   </div>
 
-                  {/* Right: Add Button */}
+                  {/* Right: Select to Place CTA */}
                   {!isReadOnly && !isCurrentTeamReady && (
                     <button
                       type="button"
                       disabled={!canAdd}
-                      onClick={() => handleAddPieceType(pieceDef.id)}
-                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 disabled:opacity-30 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black text-xs shadow-md flex items-center gap-1 shrink-0 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectPieceTypeToPlace(pieceDef.id);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all ${
+                        isPlacingThis
+                          ? 'bg-lime-400 text-slate-950 shadow-md ring-2 ring-lime-300 animate-pulse'
+                          : 'bg-slate-800 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
+                      }`}
                     >
-                      <span>➕</span> Thêm
+                      <span>{isPlacingThis ? '✓ Đang chọn' : '➕ Đặt quân'}</span>
                     </button>
                   )}
                 </div>
@@ -680,12 +738,19 @@ export default function TacticalSetup({
                     cellBg = 'opacity-0 pointer-events-none';
                   }
 
+                  // If in placing mode and cell is empty within team's half
+                  const isPlacingTarget = placingTypeId && !piece && !isOutOfPitch;
+
                   return (
                     <div
                       key={`${x}-${y}`}
                       onClick={() => handlePitchCellClick(x, y)}
                       className={`relative flex items-center justify-center rounded transition-all group overflow-visible ${cellBg} ${
-                        isOutOfPitch ? '' : 'cursor-pointer hover:brightness-110'
+                        isOutOfPitch
+                          ? ''
+                          : isPlacingTarget
+                          ? 'cursor-pointer ring-2 ring-lime-400/80 hover:bg-lime-400/40 bg-lime-950/30 scale-[0.98]'
+                          : 'cursor-pointer hover:brightness-110'
                       }`}
                     >
                       {/* Field Markings Lines */}
@@ -706,6 +771,13 @@ export default function TacticalSetup({
                       )}
                       {isBottomBox && y === 11 && (
                         <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30 pointer-events-none" />
+                      )}
+
+                      {/* Placing Target Indicator */}
+                      {isPlacingTarget && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-pulse">
+                          <span className="text-base text-lime-300 font-black">+</span>
+                        </div>
                       )}
 
                       {/* PIECE CARD ON PITCH */}
