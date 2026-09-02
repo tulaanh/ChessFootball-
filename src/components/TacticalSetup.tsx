@@ -56,7 +56,6 @@ export default function TacticalSetup({
   const [blackReady, setBlackReady] = useState(false);
 
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
-  const [isAddPieceModalOpen, setIsAddPieceModalOpen] = useState(false);
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
   const allAvailablePieces = getAllPieces();
@@ -121,7 +120,7 @@ export default function TacticalSetup({
     }
   }, [multiplayerMode, onBackToMenu]);
 
-  // Find an empty position in the team's half to place a new piece
+  // Find an empty position in the team's half
   const findEmptyPositionInHalf = (team: TeamColor): Position | null => {
     const isW = team === 'white';
     const minY = isW ? 8 : 1;
@@ -140,8 +139,8 @@ export default function TacticalSetup({
     return null;
   };
 
-  // Add new piece to the active team
-  const handleAddPiece = (pieceId: string) => {
+  // Add 1 piece of a specific type
+  const handleAddPieceType = (typeId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
 
     if (currentTeamPieces.length >= MAX_PIECES_PER_TEAM) {
@@ -149,12 +148,12 @@ export default function TacticalSetup({
       return;
     }
 
-    if (pieceId === 'king' && kingCount >= 1) {
+    if (typeId === 'king' && kingCount >= 1) {
       alert('Mỗi đội chỉ được phép có duy nhất 1 con Vua (Thủ Môn)!');
       return;
     }
 
-    const def = getPieceDefinition(pieceId);
+    const def = getPieceDefinition(typeId);
     if (totalCost + def.cost > SALARY_CAP) {
       alert(`Vượt quá quỹ lương ${SALARY_CAP} điểm!`);
       return;
@@ -168,7 +167,7 @@ export default function TacticalSetup({
 
     const newPiece: PieceInstance = {
       id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      typeId: pieceId,
+      typeId: typeId,
       team: activeTabTeam,
       position: targetPos,
       formationIndex: currentTeamPieces.length,
@@ -195,28 +194,26 @@ export default function TacticalSetup({
     };
 
     syncBoardState(nextBoard);
-    setIsAddPieceModalOpen(false);
   };
 
-  // Delete a piece from the team
-  const handleDeletePiece = (pieceId: string) => {
+  // Remove 1 piece of a specific type
+  const handleRemovePieceType = (typeId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
 
-    const pieceToDelete = board.pieces.find((p) => p.id === pieceId);
-    if (!pieceToDelete) return;
-
-    // RULE: Exactly 1 King must remain
-    if (pieceToDelete.typeId === 'king') {
-      alert('Không thể xóa Vua! Mỗi đội bắt buộc phải có 1 con Vua làm Thủ Môn.');
+    if (typeId === 'king') {
+      alert('Không thể xóa Vua! Mỗi trận bắt buộc phải có duy nhất 1 con Vua làm Thủ Môn.');
       return;
     }
+
+    const pieceToRemove = currentTeamPieces.find((p) => p.typeId === typeId);
+    if (!pieceToRemove) return;
 
     if (currentTeamPieces.length <= MIN_PIECES_PER_TEAM) {
       alert(`Mỗi đội cần có tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ trên sân!`);
       return;
     }
 
-    const nextPieces = board.pieces.filter((p) => p.id !== pieceId);
+    const nextPieces = board.pieces.filter((p) => p.id !== pieceToRemove.id);
     const newPieceTypeIds = nextPieces
       .filter((p) => p.team === activeTabTeam)
       .map((p) => p.typeId);
@@ -232,19 +229,19 @@ export default function TacticalSetup({
     const nextBoard: BoardState = {
       ...board,
       pieces: nextPieces,
-      selectedPieceId: selectedPieceId === pieceId ? null : selectedPieceId,
+      selectedPieceId: selectedPieceId === pieceToRemove.id ? null : selectedPieceId,
       whiteRoster: isWhite ? updatedRoster : whiteRoster,
       blackRoster: !isWhite ? updatedRoster : blackRoster,
     };
 
-    if (selectedPieceId === pieceId) {
+    if (selectedPieceId === pieceToRemove.id) {
       setSelectedPieceId(null);
     }
 
     syncBoardState(nextBoard);
   };
 
-  // Select / Swap piece on pitch or table
+  // Select / Swap piece on pitch
   const handleSelectPiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
     const piece = board.pieces.find((p) => p.id === pieceId);
@@ -487,93 +484,105 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Layout: Left Team Pieces List + Right Grass Pitch */}
+      {/* Main Layout: Left Piece Types Catalog + Right Grass Pitch */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: Clean List of Team Pieces with Add/Delete actions (~ 45% width / 5 cols) */}
+        {/* LEFT COLUMN: Clean Piece Types List with [+] / [-] quantity controls */}
         <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
+            <span className="text-sm sm:text-base font-black text-white">
+              CÁC LOẠI QUÂN CỜ
+            </span>
             <div className="flex items-center gap-2">
-              <span className="text-base font-black text-white">
-                DANH SÁCH QUÂN CỜ ({currentTeamPieces.length}/{MAX_PIECES_PER_TEAM})
+              <span className="text-xs text-lime-400 font-black px-2 py-0.5 rounded-full bg-lime-950 border border-lime-500/40">
+                {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} Cầu Thủ
               </span>
             </div>
-
-            {/* Add Piece Button */}
-            {!isReadOnly && !isCurrentTeamReady && (
-              <button
-                disabled={currentTeamPieces.length >= MAX_PIECES_PER_TEAM}
-                onClick={() => setIsAddPieceModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md disabled:opacity-40"
-              >
-                <span>➕</span> THÊM QUÂN
-              </button>
-            )}
           </div>
 
-          {/* Piece List Rows */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-1.5 custom-scrollbar max-h-[440px]">
-            {currentTeamPieces.map((piece, idx) => {
-              const def = getPieceDefinition(piece.typeId);
-              const isSelected = selectedPieceId === piece.id;
-              const isKing = piece.typeId === 'king';
+          {/* Piece Types List */}
+          <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar max-h-[460px]">
+            {allAvailablePieces.map((pieceDef) => {
+              const isKing = pieceDef.id === 'king';
+              const currentCount = currentTeamPieces.filter((p) => p.typeId === pieceDef.id).length;
+              
+              // Rules
+              const cannotAddMore = isReadOnly || isCurrentTeamReady || currentTeamPieces.length >= MAX_PIECES_PER_TEAM || (isKing && currentCount >= 1) || (totalCost + pieceDef.cost > SALARY_CAP);
+              const cannotRemove = isReadOnly || isCurrentTeamReady || isKing || currentCount === 0 || currentTeamPieces.length <= MIN_PIECES_PER_TEAM;
 
               return (
                 <div
-                  key={piece.id}
-                  onClick={() => handleSelectPiece(piece.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-2xl transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'bg-[#bef264]/20 border-[#bef264] ring-2 ring-[#bef264] text-white shadow-lg'
-                      : 'bg-[#10172a]/80 border-slate-800 hover:bg-[#1e293b]/90 text-slate-300'
+                  key={pieceDef.id}
+                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                    currentCount > 0
+                      ? 'bg-[#10172a] border-slate-700/90 shadow-md'
+                      : 'bg-[#0d121f]/60 border-slate-850 opacity-70'
                   }`}
                 >
                   {/* Left: Symbol & Name & Role */}
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-xl shrink-0 shadow">
-                      {def?.symbol || '♟'}
+                    <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shrink-0 shadow">
+                      {pieceDef.symbol}
                     </div>
                     <div className="truncate">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs sm:text-sm font-bold text-white truncate">
-                          {def?.vietnameseName}
+                          {pieceDef.vietnameseName}
                         </span>
                         {isKing && (
                           <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.2 rounded font-black border border-yellow-500/30">
-                            DUY NHẤT
+                            1 DUY NHẤT
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] text-amber-300 font-mono font-bold">
-                          {def?.cost || 0} điểm
+                          {pieceDef.cost} điểm
                         </span>
                         <span className="text-[10px] text-slate-400">
-                          Vị trí: ({piece.position.x}, {piece.position.y})
+                          {pieceDef.role === 'GK'
+                            ? 'Thủ Môn'
+                            : pieceDef.role === 'DEF'
+                            ? 'Hậu Vệ'
+                            : pieceDef.role === 'MID'
+                            ? 'Tiền Vệ'
+                            : 'Tiền Đạo'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Delete button */}
-                  {!isReadOnly && !isCurrentTeamReady && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {!isKing ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePiece(piece.id);
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl bg-red-950/60 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <span>🗑️</span> Xóa
-                        </button>
-                      ) : (
-                        <span className="text-[10px] text-slate-500 font-bold px-2 py-1 bg-slate-950 rounded-lg">
-                          🔒 Cố định
-                        </span>
-                      )}
+                  {/* Right: Quantity Adjuster [-] [Count] [+] */}
+                  {!isReadOnly && !isCurrentTeamReady ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Decrease button */}
+                      <button
+                        type="button"
+                        disabled={cannotRemove}
+                        onClick={() => handleRemovePieceType(pieceDef.id)}
+                        className="w-8 h-8 rounded-xl bg-red-950/70 hover:bg-red-600 disabled:opacity-30 disabled:hover:bg-red-950/70 text-red-300 hover:text-white border border-red-500/40 flex items-center justify-center font-black text-sm transition-all"
+                      >
+                        −
+                      </button>
+
+                      {/* Quantity badge */}
+                      <span className={`w-8 text-center font-mono font-black text-sm ${currentCount > 0 ? 'text-lime-400' : 'text-slate-500'}`}>
+                        x{currentCount}
+                      </span>
+
+                      {/* Increase button */}
+                      <button
+                        type="button"
+                        disabled={cannotAddMore}
+                        onClick={() => handleAddPieceType(pieceDef.id)}
+                        className="w-8 h-8 rounded-xl bg-lime-950/70 hover:bg-lime-500 disabled:opacity-30 disabled:hover:bg-lime-950/70 text-lime-300 hover:text-slate-950 border border-lime-500/40 flex items-center justify-center font-black text-sm transition-all"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 font-mono font-black text-sm text-lime-400 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">
+                      x{currentCount}
                     </div>
                   )}
                 </div>
@@ -581,7 +590,7 @@ export default function TacticalSetup({
             })}
           </div>
 
-          {/* Selected Piece Action Box (Quick Move / Info) */}
+          {/* Selected Piece Info Box on Pitch */}
           {selectedPiece && selectedPieceDef && (
             <div className="mx-3 mb-2 p-2.5 bg-slate-950/90 rounded-2xl border border-lime-400/40 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -595,15 +604,6 @@ export default function TacticalSetup({
                   </p>
                 </div>
               </div>
-
-              {selectedPiece.typeId !== 'king' && !isReadOnly && !isCurrentTeamReady && (
-                <button
-                  onClick={() => handleDeletePiece(selectedPiece.id)}
-                  className="px-2.5 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white rounded-lg text-xs font-bold border border-red-500/40"
-                >
-                  Xóa quân
-                </button>
-              )}
             </div>
           )}
 
@@ -728,7 +728,7 @@ export default function TacticalSetup({
                         <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30 pointer-events-none" />
                       )}
 
-                      {/* CLEAN PIECE CARD ON PITCH */}
+                      {/* PIECE CARD ON PITCH */}
                       {piece && (
                         <div
                           onClick={(e) => {
@@ -767,103 +767,6 @@ export default function TacticalSetup({
           </div>
         </div>
       </div>
-
-      {/* ADD PIECE MODAL (Market Picker) */}
-      {isAddPieceModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
-          onClick={() => setIsAddPieceModalOpen(false)}
-        >
-          <div
-            className="bg-[#141b2d] border-2 border-lime-400 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-black text-lime-400 uppercase">
-                  THÊM QUÂN CỜ VÀO ĐỘI {isWhite ? 'TRẮNG' : 'ĐỎ'}
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  Số lượng hiện tại: {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} • Ngân sách còn lại:{' '}
-                  <span className={remainingBudget < 0 ? 'text-red-400 font-bold' : 'text-lime-400 font-bold'}>
-                    {remainingBudget} điểm
-                  </span>
-                </p>
-              </div>
-              <button
-                onClick={() => setIsAddPieceModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-y-auto max-h-[60vh]">
-              {allAvailablePieces.map((p) => {
-                const isKing = p.id === 'king';
-                const cannotAddKing = isKing && kingCount >= 1;
-                const isAffordable = remainingBudget >= p.cost;
-                const isAvailable = !cannotAddKing && isAffordable;
-
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={!isAvailable}
-                    onClick={() => handleAddPiece(p.id)}
-                    className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all ${
-                      !isAvailable
-                        ? 'opacity-40 bg-slate-950 border-slate-800 cursor-not-allowed text-slate-500'
-                        : 'bg-slate-900/80 border-slate-700 hover:border-lime-400/60 hover:bg-slate-850 text-white'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{p.symbol}</span>
-                        <div>
-                          <div className="text-xs font-black text-white">{p.vietnameseName}</div>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-slate-950 text-slate-300 font-bold uppercase">
-                            {p.role}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-xs font-black text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
-                          {p.cost}đ
-                        </span>
-                        {cannotAddKing && (
-                          <span className="text-[9px] text-red-400 font-bold mt-0.5">
-                            Đã có 1 Vua
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-300 mt-2 line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-
-                    {p.specialAbilityDesc && (
-                      <div className="mt-2 text-[10px] text-cyan-300 bg-cyan-950/50 p-1.5 rounded-lg border border-cyan-500/30">
-                        ⚡ {p.specialAbilityDesc}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="p-3 bg-[#0d121f] border-t border-slate-800 flex justify-end">
-              <button
-                onClick={() => setIsAddPieceModalOpen(false)}
-                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Piece Registry Modal */}
       {isRegistryOpen && (
