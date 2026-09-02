@@ -94,33 +94,44 @@ export function getBestAIMove(
               reason = '⚠️ Nguy hiểm! Bị Tốt đối phương kèm 4 hướng (Né bắt bài)';
             } else {
               // Chuyền an toàn
-              score += 2000;
+              score += 1500;
               reason = `👑 Chuyền bóng an toàn cho ${getPieceDefinition(receiver.typeId).vietnameseName}`;
 
-              // Ưu tiên chuyền cho Hậu (được reset 2 AP nhờ Hào Quang Nhạc Trưởng)
-              if (receiver.typeId === 'queen' || def.hasPlaymakerAura) {
-                score += 1200;
-                reason = '🌟 Chuyền bóng cho Hậu (Kích hoạt Hào Quang Nhạc Trưởng 2 AP)';
+              // Ưu tiên chuyền cho Hậu (NẾU Hậu chưa dùng Hào quang trong hiệp này)
+              if ((receiver.typeId === 'queen' || def.hasPlaymakerAura) && (!receiver.abilityCooldown || receiver.abilityCooldown <= 0)) {
+                score += 1800;
+                reason = '🌟 Chuyền bóng cho Hậu (Kích hoạt Hào Quang Nhạc Trưởng hồi 2 AP)';
               }
 
               // Ưu tiên chuyền cho Tiền đạo ở tuyến trên
               if (receiver.typeId === 'cannon' || receiver.typeId === 'knight') {
-                score += 600;
+                score += 800;
               }
 
               // Tiến bóng lại gần khung thành đối phương
-              const distToOpponentGoal = Math.abs(target.y - targetGoalY);
-              score += (14 - distToOpponentGoal) * 60;
+              const currentDist = Math.abs(piece.position.y - targetGoalY);
+              const newDist = Math.abs(target.y - targetGoalY);
+              if (newDist < currentDist) {
+                score += (currentDist - newDist) * 150; // Thưởng điểm khi chuyền tiến lên
+              } else if (newDist > currentDist) {
+                score -= 600; // Phạt điểm nếu chuyền lùi về sân nhà không cần thiết
+              }
             }
           } else if (receiver && receiver.team !== botTeam) {
             // Chuyền thẳng vào chân đối thủ -> Rất tệ!
             score -= 20000;
             reason = '🛑 Tránh chuyền thẳng vào chân đối thủ';
           } else {
-            // Sút bóng vào khoảng trống / Tạt cánh
+            // Sút bóng vào khoảng trống / Tạt cánh / Sút xa uy hiếp khung thành
             const distToOpponentGoal = Math.abs(target.y - targetGoalY);
-            score += (14 - distToOpponentGoal) * 40;
-            reason = '🏃 Tạt bóng / Phất bóng vào khoảng trống phía trên';
+            score += (14 - distToOpponentGoal) * 80;
+
+            if (distToOpponentGoal <= 4) {
+              score += 2500; // Sút cầu môn uy hiếp
+              reason = '🚀 Tung cú dứt điểm hiểm hóc về phía góc khung thành!';
+            } else {
+              reason = '🏃 Tạt bóng / Phất bóng vào khoảng trống phía trên';
+            }
           }
         }
 

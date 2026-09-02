@@ -744,6 +744,10 @@ export function executeKick(
     }
   }
 
+  // AP & Turn variables
+  let isTurnOver = false;
+  let remainingAP = board.remainingAP;
+
   if (isPassToTeammate && receiver) {
     const recvDef = getPieceDefinition(receiver.typeId);
     const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
@@ -770,18 +774,44 @@ export function executeKick(
         timestamp: timeStr,
       });
     } else {
-      commentary.unshift({
-        id: `c_${Date.now()}`,
-        text: isQueenPass
-          ? `👑 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt [HÀO QUANG NHẠC TRƯỞNG]! Tung đường chuyền dọn cỗ thiên tài cho ${recvDef.vietnameseName}! (Chuyền dọn cỗ - Giữ nguyên 2 lượt tấn công!)`
-          : `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho đồng đội ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
-        type: 'pass',
-        team: piece.team,
-        timestamp: timeStr,
-      });
+      const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
+      const canUsePlaymakerAura = isQueenPass && (!piece.abilityCooldown || piece.abilityCooldown <= 0);
+
+      if (canUsePlaymakerAura) {
+        // Queen Playmaker Aura: Restores 2 AP, triggers cooldown for rest of the turn
+        const kickerIndex = newPieces.findIndex((p) => p.id === piece.id);
+        if (kickerIndex !== -1) {
+          newPieces[kickerIndex].abilityCooldown = 1;
+        }
+        isTurnOver = false;
+        remainingAP = 2;
+
+        commentary.unshift({
+          id: `c_${Date.now()}`,
+          text: `👑 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt [HÀO QUANG NHẠC TRƯỞNG]! Tung đường chuyền dọn cỗ thiên tài cho ${recvDef.vietnameseName}! (Chuyền dọn cỗ - Hồi phục 2 lượt tấn công!)`,
+          type: 'pass',
+          team: piece.team,
+          timestamp: timeStr,
+        });
+      } else {
+        // Normal pass: consumes 1 AP
+        const nextAP = board.remainingAP - 1;
+        isTurnOver = nextAP <= 0;
+        remainingAP = isTurnOver ? 2 : nextAP;
+
+        commentary.unshift({
+          id: `c_${Date.now()}`,
+          text: `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho ${recvDef.vietnameseName}! (Chuyền thành công${isTurnOver ? ' - Hết lượt!' : ' - Còn 1 lượt!'})`,
+          type: 'pass',
+          team: piece.team,
+          timestamp: timeStr,
+        });
+      }
     }
   } else if (isPassToOpponent && receiver) {
     const recvDef = getPieceDefinition(receiver.typeId);
+    isTurnOver = true;
+    remainingAP = 2;
     commentary.unshift({
       id: `c_${Date.now()}`,
       text: `😱 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng thẳng vào chân đối thủ ${recvDef.vietnameseName}! (Mất quyền kiểm soát - Mất lượt!)`,
@@ -790,6 +820,9 @@ export function executeKick(
       timestamp: timeStr,
     });
   } else {
+    const nextAP = board.remainingAP - 1;
+    isTurnOver = nextAP <= 0;
+    remainingAP = isTurnOver ? 2 : nextAP;
     commentary.unshift({
       id: `c_${Date.now()}`,
       text: `🚀 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} tung cú sút bóng tới toạ độ (${targetX}, ${targetY}).`,
@@ -799,32 +832,7 @@ export function executeKick(
     });
   }
 
-  // AP & Turn Management:
-  // - Chuyền bị đánh chặn -> MẤT LƯỢT NGAY LẬP TỨC, quyền điều khiển chuyển sang đội của Tốt
-  // - Chuyền cho đồng đội -> Giữ lượt (Hậu -> 2 AP)
-  // - Chuyền cho đối thủ -> MẤT LƯỢT NGAY LẬP TỨC
-  // - Sút vào khoảng trống -> Trừ 1 AP
-  let isTurnOver = false;
-  let remainingAP = board.remainingAP;
-
-  if (isPassToTeammate) {
-    if (interceptorPawn) {
-      isTurnOver = true;
-      remainingAP = 2;
-    } else {
-      const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
-      isTurnOver = false;
-      remainingAP = isQueenPass ? 2 : board.remainingAP;
-    }
-  } else if (isPassToOpponent) {
-    isTurnOver = true;
-    remainingAP = 2;
-  } else {
-    const nextAP = board.remainingAP - 1;
-    isTurnOver = nextAP <= 0;
-    remainingAP = isTurnOver ? 2 : nextAP;
-  }
-
+  // AP & Turn Management
   const nextTurn: TeamColor = isTurnOver ? (board.currentTurn === 'white' ? 'black' : 'white') : board.currentTurn;
 
   if (isTurnOver) {
