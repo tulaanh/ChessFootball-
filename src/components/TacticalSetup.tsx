@@ -478,20 +478,20 @@ export default function TacticalSetup({
   const rowIndices = Array.from({ length: endY - startY + 1 }, (_, i) => startY + i);
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col items-center py-2 px-2 sm:px-4 text-slate-100 min-h-[90vh]">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col items-center py-2 px-2 sm:px-4 md:px-6 text-slate-100 min-h-[92vh]">
       {/* Top Header & Team Switcher Bar */}
-      <div className="w-full bg-slate-800/95 border border-slate-700 rounded-2xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
+      <div className="w-full bg-slate-800/95 border border-slate-700 rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <button
             onClick={onBackToMenu}
-            className="px-3 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors border border-slate-600"
+            className="px-3.5 py-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors border border-slate-600 shadow"
           >
             <span>←</span> Menu
           </button>
 
           {/* Mid-Match Score Indicator */}
           {isMidMatchAdjustment && (
-            <div className="px-3 py-1 bg-amber-500/10 border border-amber-400/40 rounded-xl text-xs font-black text-amber-300 flex items-center gap-2 shadow">
+            <div className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-400/40 rounded-xl text-xs font-black text-amber-300 flex items-center gap-2 shadow">
               <span>⚽ TỈ SỐ:</span>
               <span className="font-mono text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
                 ⚪ {board.score.white} - {board.score.black} 🔴
@@ -499,11 +499,11 @@ export default function TacticalSetup({
             </div>
           )}
 
-          {/* Dual Team Switcher Tabs */}
-          <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700">
+          {/* Team Tabs Switcher */}
+          <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700 shadow-inner">
             <button
               onClick={() => {
-                if (multiplayerMode === 'local' || onlineRole === 'white') {
+                if (multiplayerMode === 'local' || onlineRole === 'white' || isReadOnly) {
                   setActiveTabTeam('white');
                   setSelectedPieceId(null);
                   setPlacingTypeId(null);
@@ -511,7 +511,7 @@ export default function TacticalSetup({
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
                 activeTabTeam === 'white'
-                  ? 'bg-amber-400 text-slate-950 shadow-md'
+                  ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-300'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -556,7 +556,7 @@ export default function TacticalSetup({
           {bothReady ? (
             <button
               onClick={handleStartGame}
-              className="px-6 py-2 bg-gradient-to-r from-lime-400 via-emerald-400 to-green-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-[0_0_25px_rgba(163,230,53,0.6)] uppercase tracking-wider flex items-center gap-2 animate-bounce"
+              className="px-6 py-2.5 bg-gradient-to-r from-lime-400 via-emerald-400 to-green-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-[0_0_25px_rgba(163,230,53,0.6)] uppercase tracking-wider flex items-center gap-2 animate-bounce"
             >
               <span>🟢</span> {isMidMatchAdjustment ? 'TIẾP TỤC TRẬN ĐẤU (GIAO BÓNG)' : 'BẮT ĐẦU TRẬN ĐẤU (KICK OFF)'}
             </button>
@@ -573,17 +573,17 @@ export default function TacticalSetup({
 
           <button
             onClick={() => setIsRegistryOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-cyan-300 border border-cyan-500/40 flex items-center gap-1"
+            className="px-3.5 py-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow"
           >
             <span>📚</span> Bách Khoa
           </button>
         </div>
       </div>
 
-      {/* Main Layout: Left Available Pieces to Add + Right Grass Pitch */}
+      {/* Main Layout: Left Available Pieces (4 cols) + Right Grass Pitch (8 cols) */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 45% width / 5 cols) */}
-        <div className="lg:col-span-5 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 33% width / 4 cols) */}
+        <div className="lg:col-span-4 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
             <div>
@@ -747,13 +747,13 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 55% width / 7 cols) */}
-        <div className="lg:col-span-7 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 67% width / 8 cols) */}
+        <div className="lg:col-span-8 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge & Selected Piece Delete Bar */}
-          <div className="flex items-center justify-between px-2 mb-2">
+          <div className="flex items-center justify-between px-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-lime-400 animate-pulse" />
-              <span className="text-xs font-black text-white uppercase tracking-wider">
+              <span className="w-3 h-3 rounded-full bg-lime-400 animate-pulse" />
+              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
                 SÂN BỐ TRÍ: {isWhite ? 'ĐỘI TRẮNG (SÂN DƯỚI)' : 'ĐỘI ĐỎ (SÂN TRÊN)'}
               </span>
             </div>
@@ -761,19 +761,19 @@ export default function TacticalSetup({
             {/* Selected piece delete option or Quick Clear All option on pitch */}
             <div className="flex items-center gap-2">
               {selectedPiece && selectedPieceDef && !isReadOnly && !isCurrentTeamReady && (
-                <div className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
-                  <span className="text-xs font-bold text-white">
+                <div className="flex items-center gap-2 bg-slate-900 px-3.5 py-1.5 rounded-xl border border-lime-400/40 animate-fade-in shadow-md">
+                  <span className="text-xs sm:text-sm font-bold text-white">
                     {selectedPieceDef.symbol} {selectedPieceDef.vietnameseName.split(' ')[0]}
                   </span>
                   {selectedPiece.typeId !== 'king' ? (
                     <button
                       onClick={() => handleDeletePiece(selectedPiece.id)}
-                      className="px-2 py-0.5 rounded-lg bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-black border border-red-500/40 transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-xs font-black border border-red-500/40 transition-colors"
                     >
                       🗑️ Xóa khỏi sân
                     </button>
                   ) : (
-                    <span className="text-[10px] text-amber-400 font-bold">🔒 Vua (Thủ Môn)</span>
+                    <span className="text-xs text-amber-400 font-bold">🔒 Vua (Thủ Môn)</span>
                   )}
                 </div>
               )}
@@ -782,7 +782,7 @@ export default function TacticalSetup({
                 <button
                   type="button"
                   onClick={handleClearAllPiecesExceptKing}
-                  className="px-3 py-1 bg-red-950/70 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-[11px] font-black rounded-xl transition-all flex items-center gap-1 shadow"
+                  className="px-3.5 py-1.5 bg-red-950/70 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-xs font-black rounded-xl transition-all flex items-center gap-1 shadow"
                   title="Xóa nhanh toàn bộ quân cờ hiện tại trừ quân Vua"
                 >
                   <span>🧹</span> Xóa Hết Đội Hình (Giữ Vua)
@@ -792,15 +792,15 @@ export default function TacticalSetup({
           </div>
 
           {/* Grass Field Canvas */}
-          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 flex items-center justify-center p-1 sm:p-3 min-h-[440px]">
+          <div className="relative flex-1 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 flex items-center justify-center p-2 sm:p-4 min-h-[540px] lg:min-h-[620px]">
             {/* Field Pattern & Markings: Constrained to 11/8 aspect ratio for perfect 1:1 square grid cells */}
             <div
-              className="grid gap-1 sm:gap-1.5 relative w-full bg-[#14532d] p-2 sm:p-3 rounded-2xl border-2 border-emerald-500/40 shadow-2xl"
+              className="grid gap-1.5 sm:gap-2 relative w-full bg-[#14532d] p-2.5 sm:p-4 rounded-3xl border-2 border-emerald-500/40 shadow-2xl"
               style={{
                 gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rowIndices.length}, minmax(0, 1fr))`,
                 aspectRatio: '11 / 8',
-                maxWidth: 'min(100%, calc(72vh * 11 / 8), 640px)',
+                maxWidth: 'min(100%, calc(86vh * 11 / 8), 920px)',
               }}
             >
               {rowIndices.map((y) =>

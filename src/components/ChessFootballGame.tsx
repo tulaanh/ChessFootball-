@@ -326,7 +326,7 @@ export default function ChessFootballGame({
   const isWhiteTurn = board.currentTurn === 'white';
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col items-center py-2 px-2 sm:px-4 text-slate-100 relative">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col items-center py-2 px-2 sm:px-4 md:px-6 text-slate-100 relative">
       {/* Floating Emote Display Overlay */}
       {floatingEmotes.map((e) => (
         <div
