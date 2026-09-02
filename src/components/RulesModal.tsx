@@ -41,13 +41,13 @@ export default function RulesModal({ onClose }: RulesModalProps) {
 
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
             <h3 className="font-bold text-cyan-400 text-base flex items-center gap-2">
-              <span>⚽</span> 2. Khống Chế, Chuyền & Cướp Bóng (Giữ Lượt)
+              <span>⚽</span> 2. Khống Chế, Chuyền & Cướp Bóng
             </h3>
             <p>
-              • <strong>Di chuyển nhận bóng:</strong> Di chuyển quân cờ vào ô có bóng để khống chế bóng sẽ <em>hoàn toàn không mất lượt (giữ nguyên AP)</em>, giúp bạn lập tức phối hợp hoặc dứt điểm tiếp!
+              • <strong>Kiểm soát bóng:</strong> Di chuyển quân cờ vào đúng ô có bóng để kiểm soát bóng (tiêu tốn 1 lượt AP).
             </p>
             <p>
-              • <strong>Tắc bóng / Cướp bóng:</strong> Đâm vào quân đối phương đang giữ bóng để cướp bóng và làm choáng đối thủ trong 1 lượt (Cướp bóng thành công cũng được <em>giữ nguyên lượt đi!</em>).
+              • <strong>Tắc bóng / Cướp bóng:</strong> Đâm vào quân đối phương đang giữ bóng để cướp bóng và làm choáng đối thủ trong 1 lượt (Cướp bóng thành công được <em>giữ nguyên lượt đi!</em>).
             </p>
             <p>
               • <strong>Chuyền bóng:</strong> Chuyền chính xác tới vị trí của đồng đội sẽ <em>không tiêu tốn lượt đi</em>, giúp tạo ra các pha phối hợp tiki-taka đẹp mắt!

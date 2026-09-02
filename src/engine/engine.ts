@@ -557,7 +557,7 @@ export function executeMove(
     commentary.unshift({
       id: `c_${Date.now()}`,
       text: isCollectingBall
-        ? `⚡ [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} đã di chuyển khống chế bóng thành công! (Nhận bóng - Không mất lượt!)`
+        ? `⚡ [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} đã di chuyển khống chế bóng thành công.`
         : isCarryingBall
         ? `🏃 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} dẫn bóng tới vị trí (${targetX}, ${targetY}).`
         : `🏃 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} di chuyển tới vị trí (${targetX}, ${targetY}).`,
@@ -574,11 +574,12 @@ export function executeMove(
     abilityCooldown: isBulldoze ? 1 : newPieces[pieceIndex].abilityCooldown,
   };
 
-  // Giữ lượt khi: Lấy bóng, Cướp bóng hoặc Thể hiện [SỰ TRÂU BÒ] (dẫn bóng đâm đối thủ khi sẵn sàng)
+  // Giữ lượt khi: Cướp bóng thành công hoặc Thể hiện [SỰ TRÂU BÒ] (Xe dẫn bóng đâm đối thủ)
+  // Di chuyển đến nhận bóng tiêu tốn 1 AP bình thường
   let isTurnOver = false;
   let remainingAP = board.remainingAP;
 
-  if (isCollectingBall || isBallSteal || isBulldoze) {
+  if (isBallSteal || isBulldoze) {
     isTurnOver = false;
     remainingAP = board.remainingAP;
   } else {
