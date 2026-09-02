@@ -59,12 +59,12 @@ export default function PitchBoard({
       <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 p-2 md:p-3 flex items-center justify-center">
         {/* Pitch Turf Grid: Strictly constrained to 11/15 aspect ratio for 1:1 square cells on all devices */}
         <div
-          className="grid gap-1 sm:gap-1.5 relative bg-[#14532d] p-2 sm:p-3 rounded-2xl border-2 border-emerald-500/40 shadow-2xl"
+          className="grid gap-1.5 sm:gap-2 relative bg-[#14532d] p-2.5 sm:p-4 rounded-3xl border-2 border-emerald-500/50 shadow-2xl"
           style={{
             gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${BOARD_HEIGHT}, minmax(0, 1fr))`,
             aspectRatio: '11 / 15',
-            width: 'min(96vw, calc(88vh * 11 / 15), 720px)',
+            width: 'min(98vw, calc(92vh * 11 / 15), 880px)',
           }}
         >
           {Array.from({ length: BOARD_HEIGHT }).map((_, y) =>

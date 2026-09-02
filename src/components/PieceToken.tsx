@@ -123,7 +123,7 @@ export default function PieceToken({
       <div className="w-full flex items-center justify-between px-0.5 pointer-events-none">
         {/* Refined Integrated Position Marker */}
         <span
-          className={`px-1.5 py-[1px] rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider border shadow-sm flex items-center gap-0.5 leading-none ${roleAccent.barBg}`}
+          className={`px-1.5 sm:px-2 py-[1px] sm:py-0.5 rounded-full text-[8px] sm:text-[10px] md:text-[11px] font-black uppercase tracking-wider border shadow-sm flex items-center gap-0.5 leading-none ${roleAccent.barBg}`}
         >
           {def.role === 'GK' && '🧤'}
           {def.role}
@@ -131,7 +131,7 @@ export default function PieceToken({
 
         {/* Cooldown or Stun Status */}
         {showCooldown && piece.abilityCooldown && piece.abilityCooldown > 0 ? (
-          <span className="px-1 py-[0.5px] rounded-full text-[7px] sm:text-[8px] font-black bg-slate-950 text-amber-300 border border-amber-400/80 shadow leading-none animate-pulse">
+          <span className="px-1.5 py-[1px] rounded-full text-[8px] sm:text-[10px] font-black bg-slate-950 text-amber-300 border border-amber-400/80 shadow leading-none animate-pulse">
             ⏳ {piece.abilityCooldown}
           </span>
         ) : null}
@@ -140,14 +140,14 @@ export default function PieceToken({
       {/* CENTER: Prominent, Sharp 3D Chess Symbol with Character */}
       <div className="flex-1 flex items-center justify-center my-0.5 pointer-events-none">
         <span
-          className={`font-black leading-none drop-shadow-md transition-transform ${
+          className={`font-black leading-none drop-shadow-lg transition-transform ${
             isQueen
-              ? 'text-2xl sm:text-3xl md:text-4xl scale-110'
+              ? 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl scale-110'
               : isKing
-              ? 'text-2xl sm:text-3xl md:text-4xl'
+              ? 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl'
               : isRook || isCannon || isKnight
-              ? 'text-xl sm:text-2xl md:text-3xl'
-              : 'text-lg sm:text-xl md:text-2xl'
+              ? 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl'
+              : 'text-2xl sm:text-3xl md:text-4xl'
           } ${isWhite ? 'text-slate-950' : 'text-white'}`}
         >
           {def.symbol}
@@ -158,23 +158,23 @@ export default function PieceToken({
       <div className="w-full flex items-center justify-center pointer-events-none">
         {showCost ? (
           <div
-            className={`px-1.5 py-[1px] rounded-full font-mono font-black flex items-center gap-0.5 shadow-sm border leading-none ${
+            className={`px-2 py-0.5 rounded-full font-mono font-black flex items-center gap-1 shadow-md border leading-none ${
               isQueen
-                ? 'bg-amber-400 text-slate-950 border-amber-300 text-[9px] sm:text-[10px] ring-1 ring-amber-300'
+                ? 'bg-amber-400 text-slate-950 border-amber-300 text-[10px] sm:text-xs md:text-sm ring-2 ring-amber-300'
                 : isKing
-                ? 'bg-slate-900 text-amber-300 border-amber-500/80 text-[8px] sm:text-[9px]'
+                ? 'bg-slate-900 text-amber-300 border-amber-500/80 text-[9px] sm:text-[11px] md:text-xs'
                 : def.cost >= 20
-                ? 'bg-slate-950 text-lime-300 border-lime-400/80 text-[8px] sm:text-[9px]'
-                : 'bg-slate-900/90 text-slate-200 border-slate-700 text-[8px]'
+                ? 'bg-slate-950 text-lime-300 border-lime-400/80 text-[9px] sm:text-[11px] md:text-xs'
+                : 'bg-slate-900/90 text-slate-200 border-slate-700 text-[8px] sm:text-[10px]'
             }`}
           >
-            <span className="text-[8px]">{def.cost > 0 ? '🪙' : '👑'}</span>
+            <span className="text-[10px] sm:text-xs">{def.cost > 0 ? '🪙' : '👑'}</span>
             <span>{def.cost}đ</span>
           </div>
         ) : (
           <span
-            className={`text-[8px] sm:text-[9px] font-extrabold truncate px-1 rounded block leading-tight max-w-[90%] text-center ${
-              isWhite ? 'text-slate-800' : 'text-slate-100'
+            className={`text-[8px] sm:text-[10px] md:text-[11px] font-black truncate px-1 rounded block leading-tight max-w-[95%] text-center ${
+              isWhite ? 'text-slate-900' : 'text-slate-100'
             }`}
           >
             {def.vietnameseName.split(' ')[0]}

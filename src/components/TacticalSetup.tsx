@@ -479,7 +479,7 @@ export default function TacticalSetup({
   const rowIndices = Array.from({ length: endY - startY + 1 }, (_, i) => startY + i);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto flex flex-col items-center py-2 px-2 sm:px-4 md:px-6 text-slate-100 min-h-[92vh]">
+    <div className="w-full max-w-[1920px] mx-auto flex flex-col items-center py-2 px-2 sm:px-6 md:px-8 text-slate-100 min-h-[94vh]">
       {/* Top Header & Team Switcher Bar */}
       <div className="w-full bg-slate-800/95 border border-slate-700 rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-2.5">
@@ -581,10 +581,10 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Layout: Left Available Pieces (4 cols) + Right Grass Pitch (8 cols) */}
+      {/* Main Layout: Left Available Pieces (3-4 cols) + Right Grass Pitch (8-9 cols) */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 33% width / 4 cols) */}
-        <div className="lg:col-span-4 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 25-30% width) */}
+        <div className="lg:col-span-4 xl:col-span-3 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
             <div>
@@ -802,13 +802,13 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 67% width / 8 cols) */}
-        <div className="lg:col-span-8 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-2xl relative">
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 70-75% width) */}
+        <div className="lg:col-span-8 xl:col-span-9 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge & Selected Piece Delete Bar */}
           <div className="flex items-center justify-between px-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-lime-400 animate-pulse" />
-              <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
+              <span className="w-3.5 h-3.5 rounded-full bg-lime-400 animate-pulse" />
+              <span className="text-xs sm:text-base font-black text-white uppercase tracking-wider">
                 SÂN BỐ TRÍ: {isWhite ? 'ĐỘI TRẮNG (SÂN DƯỚI)' : 'ĐỘI ĐỎ (SÂN TRÊN)'}
               </span>
             </div>
@@ -847,15 +847,15 @@ export default function TacticalSetup({
           </div>
 
           {/* Grass Field Canvas */}
-          <div className="relative flex-1 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 flex items-center justify-center p-2 sm:p-4 min-h-[540px] lg:min-h-[620px]">
+          <div className="relative flex-1 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-900 flex items-center justify-center p-2 sm:p-5 min-h-[640px] lg:min-h-[780px]">
             {/* Field Pattern & Markings: Constrained to 11/8 aspect ratio for perfect 1:1 square grid cells */}
             <div
-              className="grid gap-1.5 sm:gap-2 relative w-full bg-[#14532d] p-2.5 sm:p-4 rounded-3xl border-2 border-emerald-500/40 shadow-2xl"
+              className="grid gap-1.5 sm:gap-2.5 relative w-full bg-[#14532d] p-3 sm:p-5 rounded-3xl border-2 border-emerald-500/50 shadow-2xl"
               style={{
                 gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rowIndices.length}, minmax(0, 1fr))`,
                 aspectRatio: '11 / 8',
-                maxWidth: 'min(100%, calc(86vh * 11 / 8), 920px)',
+                maxWidth: 'min(100%, calc(92vh * 11 / 8), 1280px)',
               }}
             >
               {rowIndices.map((y) =>
