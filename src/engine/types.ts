@@ -31,6 +31,7 @@ export interface PieceDefinition {
   hasBulldozer?: boolean; // Skill: Sự Trâu Bò (Xe)
   hasMasterBallControl?: boolean; // Skill: Khống Chế Thượng Thừa (Tượng)
   hasPawnRush?: boolean; // Skill: Bứt Phá Cầu Thủ Trẻ (Tốt)
+  hasInterception?: boolean; // Skill: Đánh Chặn Bắt Bài 4 Hướng (Tốt)
   hasPlaymakerAura?: boolean; // Skill: Hào Quang Nhạc Trưởng (Hậu)
   specialAbilityDesc?: string;
 }

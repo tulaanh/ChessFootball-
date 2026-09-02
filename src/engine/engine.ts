@@ -711,24 +711,75 @@ export function executeKick(
   }
 
   // Normal pass/shot within board
-  const newBallPos: Position = { x: targetX, y: targetY };
+  let newBallPos: Position = { x: targetX, y: targetY };
   const receiver = getPieceAt(newPieces, targetX, targetY);
   const isPassToTeammate = Boolean(receiver && receiver.team === piece.team);
   const isPassToOpponent = Boolean(receiver && receiver.team !== piece.team);
+
+  // Check 4-direction Interception by enemy Pawn around receiver
+  let interceptorPawn: PieceInstance | null = null;
+  const ORTHOGONAL_4 = [
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+  ];
+
+  if (isPassToTeammate && receiver) {
+    for (const dir of ORTHOGONAL_4) {
+      const adjX = targetX + dir.dx;
+      const adjY = targetY + dir.dy;
+      const adjPiece = getPieceAt(newPieces, adjX, adjY);
+      if (
+        adjPiece &&
+        adjPiece.team !== piece.team &&
+        !adjPiece.isStunned
+      ) {
+        const adjDef = getPieceDefinition(adjPiece.typeId);
+        if (adjDef.hasInterception || adjPiece.typeId === 'pawn') {
+          interceptorPawn = adjPiece;
+          break;
+        }
+      }
+    }
+  }
 
   if (isPassToTeammate && receiver) {
     const recvDef = getPieceDefinition(receiver.typeId);
     const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
 
-    commentary.unshift({
-      id: `c_${Date.now()}`,
-      text: isQueenPass
-        ? `👑 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt [HÀO QUANG NHẠC TRƯỞNG]! Tung đường chuyền dọn cỗ thiên tài cho ${recvDef.vietnameseName}! (Chuyền dọn cỗ - Giữ nguyên 2 lượt tấn công!)`
-        : `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho đồng đội ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
-      type: 'pass',
-      team: piece.team,
-      timestamp: timeStr,
-    });
+    if (interceptorPawn) {
+      // INTERCEPTION TRIGGERED!
+      const interceptorDef = getPieceDefinition(interceptorPawn.typeId);
+      
+      // Push receiver back and stun them
+      pushOpponent(newPieces, interceptorPawn, receiver);
+      const receiverIndex = newPieces.findIndex((p) => p.id === receiver.id);
+      if (receiverIndex !== -1) {
+        newPieces[receiverIndex].isStunned = true;
+      }
+
+      // Ball is seized by the intercepting Pawn
+      newBallPos = { x: interceptorPawn.position.x, y: interceptorPawn.position.y };
+
+      commentary.unshift({
+        id: `c_${Date.now()}`,
+        text: `🛡️⚡ [${interceptorPawn.team === 'white' ? 'Trắng' : 'Đỏ'}] ${interceptorDef.vietnameseName} kích hoạt [ĐÁNH CHẶN BẮT BÀI]! Lao ra cướp bóng trước mũi giày của ${recvDef.vietnameseName}, đẩy lùi và làm choáng đối thủ! (Mất quyền kiểm soát & Mất lượt!)`,
+        type: 'tackle',
+        team: interceptorPawn.team,
+        timestamp: timeStr,
+      });
+    } else {
+      commentary.unshift({
+        id: `c_${Date.now()}`,
+        text: isQueenPass
+          ? `👑 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt [HÀO QUANG NHẠC TRƯỞNG]! Tung đường chuyền dọn cỗ thiên tài cho ${recvDef.vietnameseName}! (Chuyền dọn cỗ - Giữ nguyên 2 lượt tấn công!)`
+          : `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho đồng đội ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
+        type: 'pass',
+        team: piece.team,
+        timestamp: timeStr,
+      });
+    }
   } else if (isPassToOpponent && receiver) {
     const recvDef = getPieceDefinition(receiver.typeId);
     commentary.unshift({
@@ -748,17 +799,23 @@ export function executeKick(
     });
   }
 
-  // Chuyền cho đồng đội -> Giữ lượt
-  // Đặc biệt: Chuyền từ Hậu (Nhạc Trưởng) -> Hồi phục trọn vẹn 2 AP cho đồng đội
-  // Chuyền cho đối thủ -> MẤT LƯỢT NGAY LẬP TỨC
-  // Sút vào khoảng trống -> Trừ 1 AP
+  // AP & Turn Management:
+  // - Chuyền bị đánh chặn -> MẤT LƯỢT NGAY LẬP TỨC, quyền điều khiển chuyển sang đội của Tốt
+  // - Chuyền cho đồng đội -> Giữ lượt (Hậu -> 2 AP)
+  // - Chuyền cho đối thủ -> MẤT LƯỢT NGAY LẬP TỨC
+  // - Sút vào khoảng trống -> Trừ 1 AP
   let isTurnOver = false;
   let remainingAP = board.remainingAP;
 
   if (isPassToTeammate) {
-    const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
-    isTurnOver = false;
-    remainingAP = isQueenPass ? 2 : board.remainingAP;
+    if (interceptorPawn) {
+      isTurnOver = true;
+      remainingAP = 2;
+    } else {
+      const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
+      isTurnOver = false;
+      remainingAP = isQueenPass ? 2 : board.remainingAP;
+    }
   } else if (isPassToOpponent) {
     isTurnOver = true;
     remainingAP = 2;

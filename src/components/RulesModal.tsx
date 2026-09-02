@@ -80,7 +80,11 @@ export default function RulesModal({ onClose }: RulesModalProps) {
               • <strong>Quân Xe (♖) - Sự Trâu Bò:</strong> Khi cầm bóng đâm vào đối thủ sẽ húc văng đối phương ra xa và tiếp tục giữ bóng mà không mất lượt (Hồi chiêu 1 lượt).
             </p>
             <p>
-              • <strong>Quân Tốt (♙) - Bứt Phá Cầu Thủ Trẻ:</strong> Khi vượt sang nửa sân đối phương, tầm sút tăng lên <strong>3 ô</strong> và có thể <strong>bứt tốc tiến 2 ô thẳng</strong> về phía trước!
+              • <strong>Quân Tốt (♙) - Đánh Chặn Bắt Bài & Bứt Phá:</strong>
+              <br />
+              - <em>Phòng ngự (Đánh Chặn 4 Hướng):</em> Khi đối thủ nhận bóng ở 4 ô liền kề (Trên, Dưới, Trái, Phải), Tốt sẽ lập tức <strong>cướp bóng, đẩy lùi, làm choáng đối thủ và khiến đối phương MẤT LƯỢT ngay lập tức</strong>!
+              <br />
+              - <em>Tấn công (Bứt Phá Trẻ):</em> Khi sang nửa sân đối phương, tăng tầm sút lên <strong>3 ô</strong> và có thể <strong>bứt tốc tiến 2 ô thẳng</strong>!
             </p>
             <p>
               • <strong>Quỹ Lương (Salary Cap):</strong> Mỗi đội có tối đa <strong>150 điểm</strong> để chiêu mộ tối đa 11 quân cờ.

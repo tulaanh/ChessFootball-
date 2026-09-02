@@ -158,7 +158,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     role: 'DEF',
     cost: 5,
     symbol: '♙',
-    description: 'Cầu thủ cần mẫn. Khi sang nửa sân đối phương, kích hoạt [BỨT PHÁ TRẺ]: Tầm sút tăng lên 3 ô và có thể bứt tốc tiến 2 ô về phía trước!',
+    description: 'Chuyên gia phòng ngự khu vực. Sở hữu kỹ năng [ĐÁNH CHẶN BẮT BÀI]: Đối thủ nhận bóng ở 4 hướng xung quanh sẽ bị Tốt cướp bóng, đẩy lùi, làm choáng và mất lượt ngay lập tức! Khi sang sân khách kích hoạt thêm [BỨT PHÁ TRẺ].',
     moveRule: {
       type: 'step',
       vectors: ALL_8_VECTORS.map((v) => ({ ...v, maxRange: 1 })),
@@ -169,7 +169,8 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       power: 2,
     },
     hasPawnRush: true,
-    specialAbilityDesc: 'Bứt Phá Cầu Thủ Trẻ: Khi vượt sang nửa sân đối phương, tăng tầm sút lên 3 ô và bứt tốc tiến 2 ô thẳng!',
+    hasInterception: true,
+    specialAbilityDesc: 'Đánh Chặn 4 Hướng: Cướp bóng + làm choáng + cướp lượt khi đối phương nhận bóng bên cạnh! Khi sang sân khách: Sút xa 3 ô & tiến 2 ô!',
   },
 
   // --- QUÂN CỜ MỞ RỘNG (CUSTOM / EXPANSION PIECES) ---
