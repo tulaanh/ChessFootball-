@@ -889,7 +889,7 @@ export default function TacticalSetup({
                     <div
                       key={`${x}-${y}`}
                       onClick={() => handlePitchCellClick(x, y)}
-                      className={`relative aspect-square flex items-center justify-center rounded-lg transition-all group overflow-visible ${cellBg} ${
+                      className={`relative aspect-square flex items-center justify-center rounded-lg sm:rounded-xl transition-all group overflow-hidden ${cellBg} ${
                         isOutOfPitch
                           ? ''
                           : isPlacingTarget

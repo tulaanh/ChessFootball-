@@ -113,7 +113,7 @@ export default function PitchBoard({
                 <div
                   key={`${x}-${y}`}
                   onClick={handleSquareClick}
-                  className={`relative aspect-square flex items-center justify-center rounded-md sm:rounded-lg transition-all duration-150 group overflow-visible ${cellBg} ${
+                  className={`relative aspect-square flex items-center justify-center rounded-md sm:rounded-lg transition-all duration-150 group overflow-hidden ${cellBg} ${
                     isOutOfPitch ? 'pointer-events-none' : 'cursor-pointer'
                   } ${
                     isSelected ? 'ring-4 ring-yellow-400 z-30 scale-110 shadow-[0_0_20px_rgba(250,204,21,0.9)]' : ''
