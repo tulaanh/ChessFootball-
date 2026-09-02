@@ -28,8 +28,10 @@ export interface PieceDefinition {
     isLob?: boolean; // Can jump over blocking pieces (like Knight/L-shape)
     power?: number; // visual power rating 1-5
   };
-  hasBulldozer?: boolean; // Skill: Sự Trâu Bò (khi cầm bóng đâm vào quân đối phương sẽ không mất lượt)
-  hasMasterBallControl?: boolean; // Skill: Khống Chế Thượng Thừa (di chuyển nhận bóng không mất lượt)
+  hasBulldozer?: boolean; // Skill: Sự Trâu Bò (Xe)
+  hasMasterBallControl?: boolean; // Skill: Khống Chế Thượng Thừa (Tượng)
+  hasPawnRush?: boolean; // Skill: Bứt Phá Cầu Thủ Trẻ (Tốt)
+  hasPlaymakerAura?: boolean; // Skill: Hào Quang Nhạc Trưởng (Hậu)
   specialAbilityDesc?: string;
 }
 

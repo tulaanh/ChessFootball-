@@ -216,6 +216,20 @@ export function calculateValidMoves(board: BoardState, pieceId: string): Positio
     addMove(targetX, targetY);
   }
 
+  // 3. Pawn Breakthrough (Bứt Phá Cầu Thủ Trẻ)
+  // Khi Tốt sang nửa sân đối phương (White: y <= 6, Black: y >= 8), có thể bứt tốc tiến 2 ô về phía trước
+  if (def.hasPawnRush || piece.typeId === 'pawn') {
+    const isEnemyHalf = piece.team === 'white' ? piece.position.y <= 6 : piece.position.y >= 8;
+    if (isEnemyHalf) {
+      const forwardY1 = piece.team === 'white' ? piece.position.y - 1 : piece.position.y + 1;
+      const forwardY2 = piece.team === 'white' ? piece.position.y - 2 : piece.position.y + 2;
+      const step1Occupant = getPieceAt(board.pieces, piece.position.x, forwardY1);
+      if (!step1Occupant) {
+        addMove(piece.position.x, forwardY2);
+      }
+    }
+  }
+
   return Array.from(movesMap.values());
 }
 
@@ -271,8 +285,12 @@ export function calculateValidKicks(board: BoardState, pieceId: string): Positio
       }
     }
   } else if (type === 'step') {
+    // Pawn Breakthrough (Tăng tầm sút lên 3 ô khi ở nửa sân đối phương)
+    const isPawnInEnemyHalf = (def.hasPawnRush || piece.typeId === 'pawn') && 
+      (piece.team === 'white' ? piece.position.y <= 6 : piece.position.y >= 8);
+
     for (const v of vectors) {
-      const maxRange = v.maxRange || 1;
+      const maxRange = isPawnInEnemyHalf ? 3 : (v.maxRange || 1);
       for (let r = 1; r <= maxRange; r++) {
         const targetX = ball.x + v.dx * r;
         const targetY = ball.y + v.dy * r;
@@ -700,9 +718,13 @@ export function executeKick(
 
   if (isPassToTeammate && receiver) {
     const recvDef = getPieceDefinition(receiver.typeId);
+    const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
+
     commentary.unshift({
       id: `c_${Date.now()}`,
-      text: `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho đồng đội ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
+      text: isQueenPass
+        ? `👑 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt [HÀO QUANG NHẠC TRƯỞNG]! Tung đường chuyền dọn cỗ thiên tài cho ${recvDef.vietnameseName}! (Chuyền dọn cỗ - Giữ nguyên 2 lượt tấn công!)`
+        : `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho đồng đội ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
       type: 'pass',
       team: piece.team,
       timestamp: timeStr,
@@ -727,14 +749,16 @@ export function executeKick(
   }
 
   // Chuyền cho đồng đội -> Giữ lượt
+  // Đặc biệt: Chuyền từ Hậu (Nhạc Trưởng) -> Hồi phục trọn vẹn 2 AP cho đồng đội
   // Chuyền cho đối thủ -> MẤT LƯỢT NGAY LẬP TỨC
   // Sút vào khoảng trống -> Trừ 1 AP
   let isTurnOver = false;
   let remainingAP = board.remainingAP;
 
   if (isPassToTeammate) {
+    const isQueenPass = Boolean(def.hasPlaymakerAura || piece.typeId === 'queen');
     isTurnOver = false;
-    remainingAP = board.remainingAP;
+    remainingAP = isQueenPass ? 2 : board.remainingAP;
   } else if (isPassToOpponent) {
     isTurnOver = true;
     remainingAP = 2;

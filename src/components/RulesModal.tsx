@@ -68,13 +68,19 @@ export default function RulesModal({ onClose }: RulesModalProps) {
 
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
             <h3 className="font-bold text-rose-400 text-base flex items-center gap-2">
-              <span>🦬</span> 4. Kỹ Năng Đặc Biệt & Ngân Sách Đội Hình
+              <span>🦬</span> 4. Kỹ Năng Đặc Biệt Của Các Quân Cờ
             </h3>
+            <p>
+              • <strong>Quân Hậu (♕) - Hào Quang Nhạc Trưởng:</strong> Nhạc trưởng tối thượng! Mỗi khi Hậu chuyền bóng dọn cỗ cho đồng đội sẽ lập tức <em>hồi phục trọn vẹn 2 lượt tấn công</em> cho đội nhà.
+            </p>
+            <p>
+              • <strong>Quân Tượng (♗) - Khống Chế Thượng Thừa:</strong> Chuyên gia hãm bóng chéo! Mỗi khi di chuyển vào ô có bóng để nhận bóng sẽ <em>hoàn toàn KHÔNG MẤT LƯỢT ĐI</em>.
+            </p>
             <p>
               • <strong>Quân Xe (♖) - Sự Trâu Bò:</strong> Khi cầm bóng đâm vào đối thủ sẽ húc văng đối phương ra xa và tiếp tục giữ bóng mà không mất lượt (Hồi chiêu 1 lượt).
             </p>
             <p>
-              • <strong>Quân Tượng (♗) - Khống Chế Thượng Thừa:</strong> Chuyên gia hãm bóng chéo! Mỗi khi di chuyển vào ô có bóng để nhận bóng sẽ <em>hoàn toàn KHÔNG MẤT LƯỢT ĐI</em>.
+              • <strong>Quân Tốt (♙) - Bứt Phá Cầu Thủ Trẻ:</strong> Khi vượt sang nửa sân đối phương, tầm sút tăng lên <strong>3 ô</strong> và có thể <strong>bứt tốc tiến 2 ô thẳng</strong> về phía trước!
             </p>
             <p>
               • <strong>Quỹ Lương (Salary Cap):</strong> Mỗi đội có tối đa <strong>150 điểm</strong> để chiêu mộ tối đa 11 quân cờ.

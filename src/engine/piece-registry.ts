@@ -70,7 +70,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     role: 'FWD',
     cost: 45,
     symbol: '♕',
-    description: 'Ngôi sao toàn diện nhất sân. Di chuyển trượt xa 8 hướng, sút bóng uy lực đa hướng khắp sân.',
+    description: 'Ngôi sao toàn năng nhất sân. Di chuyển trượt xa 8 hướng, sút bóng uy lực. Sở hữu [HÀO QUANG NHẠC TRƯỞNG]: Đường chuyền dọn cỗ cho đồng đội mở ra các cơ hội tấn công bùng nổ!',
     moveRule: {
       type: 'slide',
       vectors: ALL_8_VECTORS,
@@ -80,6 +80,8 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       vectors: ALL_8_VECTORS,
       power: 5,
     },
+    hasPlaymakerAura: true,
+    specialAbilityDesc: 'Hào Quang Nhạc Trưởng: Chuyên gia kiến tạo dọn cỗ, chuyền bóng cho đồng đội hồi phục thế trận tấn công bùng nổ!',
   },
 
   // 3. ROOK (Hậu Vệ Quét / Xe)
@@ -156,7 +158,7 @@ export const INITIAL_PIECES: PieceDefinition[] = [
     role: 'DEF',
     cost: 5,
     symbol: '♙',
-    description: 'Cầu thủ cần mẫn, di chuyển 1 ô theo 8 hướng xung quanh, chuyền ngắn 1-2 ô để phối hợp ban bật tiki-taka.',
+    description: 'Cầu thủ cần mẫn. Khi sang nửa sân đối phương, kích hoạt [BỨT PHÁ TRẺ]: Tầm sút tăng lên 3 ô và có thể bứt tốc tiến 2 ô về phía trước!',
     moveRule: {
       type: 'step',
       vectors: ALL_8_VECTORS.map((v) => ({ ...v, maxRange: 1 })),
@@ -166,6 +168,8 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       vectors: ALL_8_VECTORS.map((v) => ({ ...v, maxRange: 2 })),
       power: 2,
     },
+    hasPawnRush: true,
+    specialAbilityDesc: 'Bứt Phá Cầu Thủ Trẻ: Khi vượt sang nửa sân đối phương, tăng tầm sút lên 3 ô và bứt tốc tiến 2 ô thẳng!',
   },
 
   // --- QUÂN CỜ MỞ RỘNG (CUSTOM / EXPANSION PIECES) ---
