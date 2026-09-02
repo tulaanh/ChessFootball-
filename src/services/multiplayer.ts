@@ -3,7 +3,7 @@ import { BoardState, TeamColor } from '@/engine/types';
 
 export type NetworkPacket =
   | { type: 'JOIN_REQUEST'; senderId: string }
-  | { type: 'JOIN_ACCEPT'; hostId: string; board: BoardState }
+  | { type: 'JOIN_ACCEPT'; hostId: string; board?: BoardState }
   | { type: 'SYNC_STATE'; board: BoardState; senderId: string }
   | { type: 'EMOTE'; emoji: string; team: TeamColor; senderId: string }
   | { type: 'RESET_REQUEST'; senderId: string }
@@ -18,10 +18,11 @@ export interface MultiplayerCallbacks {
   onStatusUpdate?: (status: string) => void;
 }
 
-// Ultra-reliable public MQTT brokers over Secure WebSocket (WSS)
+// Public MQTT WSS Brokers list for high reliability
 const BROKER_URLS = [
   'wss://broker.emqx.io:8084/mqtt',
   'wss://broker.hivemq.com:8884/mqtt',
+  'wss://public.mqtthq.com:8084/mqtt',
   'wss://test.mosquitto.org:8081',
 ];
 
@@ -31,7 +32,8 @@ class MultiplayerService {
   private myClientId: string = '';
   private topic: string = '';
   private joinInterval: number | null = null;
-  private isConnectedToPeer: boolean = false;
+  private joinTimeoutTimer: number | null = null;
+  public isConnectedToPeer: boolean = false;
   public myRole: TeamColor | null = null;
   public roomId: string | null = null;
   public isHost: boolean = false;
@@ -42,59 +44,79 @@ class MultiplayerService {
 
   private connectBroker(brokerIndex = 0, onConnectSuccess: () => void, onError: (err: Error) => void) {
     if (brokerIndex >= BROKER_URLS.length) {
-      onError(new Error('Không thể kết nối đến tất cả máy chủ đám mây!'));
+      onError(new Error('Không thể kết nối đến máy chủ mạng P2P. Vui lòng kiểm tra lại kết nối Internet!'));
       return;
     }
 
     const brokerUrl = BROKER_URLS[brokerIndex];
-    this.myClientId = `player_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+    this.myClientId = `chessfoot_${Math.random().toString(36).substring(2, 8)}_${Date.now()}`;
 
     if (this.callbacks?.onStatusUpdate) {
-      this.callbacks.onStatusUpdate(`Đang kết nối đám mây (${brokerIndex + 1}/${BROKER_URLS.length})...`);
+      this.callbacks.onStatusUpdate(`Đang kết nối cổng máy chủ (${brokerIndex + 1}/${BROKER_URLS.length})...`);
     }
 
-    const client = mqtt.connect(brokerUrl, {
-      clientId: this.myClientId,
-      clean: true,
-      connectTimeout: 8000,
-      reconnectPeriod: 3000,
-    });
+    let isSuccess = false;
 
-    let connected = false;
+    try {
+      const client = mqtt.connect(brokerUrl, {
+        clientId: this.myClientId,
+        clean: true,
+        connectTimeout: 6000,
+        reconnectPeriod: 2500,
+        keepalive: 30,
+      });
 
-    client.on('connect', () => {
-      connected = true;
-      this.client = client;
-      onConnectSuccess();
-    });
+      const timeoutId = window.setTimeout(() => {
+        if (!isSuccess) {
+          console.warn(`Timeout connecting to ${brokerUrl}`);
+          try {
+            client.end(true);
+          } catch (e) {}
+          this.connectBroker(brokerIndex + 1, onConnectSuccess, onError);
+        }
+      }, 6500);
 
-    client.on('error', (err) => {
-      console.warn(`Broker error at ${brokerUrl}:`, err);
-      if (!connected) {
-        client.end(true);
-        // Try next broker
-        this.connectBroker(brokerIndex + 1, onConnectSuccess, onError);
-      }
-    });
+      client.on('connect', () => {
+        if (isSuccess) return;
+        isSuccess = true;
+        clearTimeout(timeoutId);
+        this.client = client;
+        console.log(`Connected to broker: ${brokerUrl}`);
+        onConnectSuccess();
+      });
 
-    client.on('message', (_topic, message) => {
-      try {
-        const packet = JSON.parse(message.toString()) as NetworkPacket;
-        this.handleIncomingPacket(packet);
-      } catch (e) {
-        console.error('Failed to parse MQTT message:', e);
-      }
-    });
+      client.on('error', (err) => {
+        console.warn(`Broker error at ${brokerUrl}:`, err);
+        if (!isSuccess) {
+          clearTimeout(timeoutId);
+          try {
+            client.end(true);
+          } catch (e) {}
+          this.connectBroker(brokerIndex + 1, onConnectSuccess, onError);
+        }
+      });
 
-    client.on('close', () => {
-      if (this.isConnectedToPeer && this.callbacks) {
-        this.callbacks.onStatusUpdate?.('Đang tái kết nối đường truyền...');
-      }
-    });
+      client.on('message', (_topic, message) => {
+        try {
+          const packet = JSON.parse(message.toString()) as NetworkPacket;
+          this.handleIncomingPacket(packet);
+        } catch (e) {
+          console.error('Failed to parse MQTT message:', e);
+        }
+      });
+
+      client.on('close', () => {
+        if (this.isConnectedToPeer && this.callbacks?.onStatusUpdate) {
+          this.callbacks.onStatusUpdate('Đang tái kết nối đường truyền...');
+        }
+      });
+    } catch (err: any) {
+      this.connectBroker(brokerIndex + 1, onConnectSuccess, onError);
+    }
   }
 
   /**
-   * Host creates a new room with a random 6-digit room code
+   * Host creates a new room with a 6-digit room code
    */
   public createRoom(onRoomCreated: (code: string) => void) {
     this.cleanup();
@@ -104,7 +126,7 @@ class MultiplayerService {
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
     const roomCode = `cf-${randomSuffix}`;
     this.roomId = roomCode;
-    this.topic = `chessfootball/v1/room/${roomCode}`;
+    this.topic = `chessfootball/v2/room/${roomCode}`;
 
     this.connectBroker(
       0,
@@ -112,11 +134,11 @@ class MultiplayerService {
         if (!this.client) return;
         this.client.subscribe(this.topic, { qos: 1 }, (err) => {
           if (err) {
-            this.callbacks?.onError('Lỗi đăng ký phòng trên máy chủ!');
+            this.callbacks?.onError('Lỗi khi mở phòng trên máy chủ!');
             return;
           }
           onRoomCreated(roomCode);
-          this.callbacks?.onStatusUpdate?.('🟢 Phòng đã tạo thành công! Đang chờ đối thủ...');
+          this.callbacks?.onStatusUpdate?.('🟢 Phòng đã mở! Đang chờ đối thủ tham gia...');
         });
       },
       (err) => {
@@ -128,13 +150,15 @@ class MultiplayerService {
   /**
    * Guest joins an existing room by room code
    */
-  public joinRoom(roomCode: string, onJoined: () => void, initialBoard?: BoardState) {
+  public joinRoom(roomCode: string) {
     this.cleanup();
     this.isHost = false;
     this.myRole = 'black';
     const cleanRoomCode = roomCode.trim().toLowerCase();
     this.roomId = cleanRoomCode;
-    this.topic = `chessfootball/v1/room/${cleanRoomCode}`;
+    this.topic = `chessfootball/v2/room/${cleanRoomCode}`;
+
+    this.callbacks?.onStatusUpdate?.('Đang kết nối tới máy chủ...');
 
     this.connectBroker(
       0,
@@ -146,10 +170,11 @@ class MultiplayerService {
             return;
           }
 
-          this.callbacks?.onStatusUpdate?.('Đang liên lạc với Chủ phòng...');
+          this.callbacks?.onStatusUpdate?.('Đang gửi yêu cầu vào phòng tới Chủ phòng...');
 
           // Send JOIN_REQUEST repeatedly until host responds
           const sendJoin = () => {
+            if (this.isConnectedToPeer) return;
             this.sendPacket({
               type: 'JOIN_REQUEST',
               senderId: this.myClientId,
@@ -159,12 +184,16 @@ class MultiplayerService {
           sendJoin();
           this.joinInterval = window.setInterval(sendJoin, 1200);
 
-          // Timeout after 15s if no host responds
-          setTimeout(() => {
-            if (!this.isConnectedToPeer && this.joinInterval) {
-              this.callbacks?.onStatusUpdate?.('Chưa thấy phản hồi từ chủ phòng. Đang tiếp tục thử...');
+          // Timeout check
+          this.joinTimeoutTimer = window.setTimeout(() => {
+            if (!this.isConnectedToPeer) {
+              if (this.joinInterval) {
+                clearInterval(this.joinInterval);
+                this.joinInterval = null;
+              }
+              this.callbacks?.onError('Không tìm thấy Chủ phòng hoặc Chủ phòng chưa trực tuyến. Vui lòng kiểm tra lại mã phòng!');
             }
-          }, 6000);
+          }, 12000);
         });
       },
       (err) => {
@@ -180,15 +209,17 @@ class MultiplayerService {
     }
 
     if (packet.type === 'JOIN_REQUEST' && this.isHost) {
-      // Host receives join request from guest -> Accept and send current board
+      // Host receives join request from guest -> Accept and trigger connected
       if (!this.isConnectedToPeer) {
         this.isConnectedToPeer = true;
-        this.callbacks?.onConnected(this.roomId!, 'white');
+        if (this.callbacks) {
+          this.callbacks.onConnected(this.roomId!, 'white');
+        }
       }
       this.sendPacket({
         type: 'JOIN_ACCEPT',
         hostId: this.myClientId,
-        board: (window as any).__CHESS_FOOTBALL_BOARD_STATE__ || (null as any),
+        board: (window as any).__CHESS_FOOTBALL_BOARD_STATE__ || undefined,
       });
       return;
     }
@@ -199,15 +230,21 @@ class MultiplayerService {
         clearInterval(this.joinInterval);
         this.joinInterval = null;
       }
+      if (this.joinTimeoutTimer) {
+        clearTimeout(this.joinTimeoutTimer);
+        this.joinTimeoutTimer = null;
+      }
       if (!this.isConnectedToPeer) {
         this.isConnectedToPeer = true;
-        this.callbacks?.onConnected(this.roomId!, 'black');
-        if (packet.board) {
-          this.callbacks?.onPacketReceived({
-            type: 'SYNC_STATE',
-            board: packet.board,
-            senderId: packet.hostId,
-          });
+        if (this.callbacks) {
+          this.callbacks.onConnected(this.roomId!, 'black');
+          if (packet.board) {
+            this.callbacks.onPacketReceived({
+              type: 'SYNC_STATE',
+              board: packet.board,
+              senderId: packet.hostId,
+            });
+          }
         }
       }
       return;
@@ -238,6 +275,10 @@ class MultiplayerService {
     if (this.joinInterval) {
       clearInterval(this.joinInterval);
       this.joinInterval = null;
+    }
+    if (this.joinTimeoutTimer) {
+      clearTimeout(this.joinTimeoutTimer);
+      this.joinTimeoutTimer = null;
     }
     if (this.client) {
       try {

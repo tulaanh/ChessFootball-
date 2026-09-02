@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RulesModal from './RulesModal';
 import PieceRegistryModal from './PieceRegistryModal';
 import OnlineLobbyModal from './OnlineLobbyModal';
@@ -13,6 +13,16 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
   const [isOnlineLobbyOpen, setIsOnlineLobbyOpen] = useState(false);
+  const [initialRoomFromUrl, setInitialRoomFromUrl] = useState<string>('');
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+      setInitialRoomFromUrl(roomParam);
+      setIsOnlineLobbyOpen(true);
+    }
+  }, []);
 
   return (
     <div className="relative min-h-[85vh] flex flex-col items-center justify-center text-slate-100 px-4 py-8 overflow-hidden select-none">
@@ -125,6 +135,7 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
       {isRegistryOpen && <PieceRegistryModal onClose={() => setIsRegistryOpen(false)} />}
       {isOnlineLobbyOpen && (
         <OnlineLobbyModal
+          initialRoomCode={initialRoomFromUrl}
           onStartOnlineMatch={(role, roomId) => {
             setIsOnlineLobbyOpen(false);
             onStartOnline(role, roomId);
