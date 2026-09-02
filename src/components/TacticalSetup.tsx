@@ -20,6 +20,7 @@ import {
 } from '@/engine/piece-registry';
 import { multiplayerService, NetworkPacket } from '@/services/multiplayer';
 import PieceRegistryModal from './PieceRegistryModal';
+import PieceToken from './PieceToken';
 
 interface TacticalSetupProps {
   initialBoard?: BoardState;
@@ -632,6 +633,23 @@ export default function TacticalSetup({
               const isSquadFull = currentTeamPieces.length >= MAX_PIECES_PER_TEAM;
               const isPlacingThis = placingTypeId === pieceDef.id;
               const canAdd = !isReadOnly && !isCurrentTeamReady && !isSquadFull && canAfford;
+              const isQueen = pieceDef.id === 'queen';
+              const isRook = pieceDef.id === 'rook';
+              const isCannon = pieceDef.id === 'cannon';
+              const isKnight = pieceDef.id === 'knight';
+              const isBishop = pieceDef.id === 'bishop';
+
+              const tierBorderColor = isQueen
+                ? 'border-amber-400/80 hover:border-amber-300'
+                : isRook
+                ? 'border-blue-500/80 hover:border-blue-400'
+                : isCannon
+                ? 'border-orange-500/80 hover:border-orange-400'
+                : isKnight
+                ? 'border-emerald-500/80 hover:border-emerald-400'
+                : isBishop
+                ? 'border-cyan-500/80 hover:border-cyan-400'
+                : 'border-slate-600/80 hover:border-slate-500';
 
               return (
                 <div
@@ -639,42 +657,79 @@ export default function TacticalSetup({
                   onClick={() => {
                     if (canAdd) handleSelectPieceTypeToPlace(pieceDef.id);
                   }}
-                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                  className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all cursor-pointer ${
                     isPlacingThis
-                      ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)] text-white'
+                      ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.4)] text-white'
                       : canAdd
-                      ? 'bg-slate-700/60 border-slate-600/80 hover:border-lime-400/60 hover:bg-slate-700 text-slate-100 shadow-sm'
-                      : 'bg-slate-800/40 border-slate-700/40 opacity-40 cursor-not-allowed text-slate-400'
+                      ? `bg-slate-800/90 ${tierBorderColor} hover:bg-slate-700/80 text-slate-100 shadow-md hover:shadow-xl hover:scale-[1.01]`
+                      : 'bg-slate-900/40 border-slate-800 opacity-40 cursor-not-allowed text-slate-500'
                   }`}
                 >
-                  {/* Left: Symbol & Name & Role */}
+                  {/* Left: 3D Symbol Token & Name & Role */}
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-2xl shrink-0 shadow">
-                      {pieceDef.symbol}
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-lg border-2 ${
+                        isQueen
+                          ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/50'
+                          : isRook
+                          ? 'bg-gradient-to-br from-blue-600 to-indigo-800 text-white border-blue-400'
+                          : isCannon
+                          ? 'bg-gradient-to-br from-orange-600 to-red-800 text-white border-orange-400'
+                          : isKnight
+                          ? 'bg-gradient-to-br from-emerald-600 to-teal-800 text-white border-emerald-400'
+                          : isBishop
+                          ? 'bg-gradient-to-br from-cyan-600 to-blue-800 text-white border-cyan-400'
+                          : 'bg-slate-800 text-slate-200 border-slate-600'
+                      }`}
+                    >
+                      <span className="leading-none drop-shadow">{pieceDef.symbol}</span>
                     </div>
+
                     <div className="truncate">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs sm:text-sm font-bold text-white truncate">
+                        <span className="text-xs sm:text-sm font-black text-white truncate">
                           {pieceDef.vietnameseName}
                         </span>
                         {countOnPitch > 0 && (
-                          <span className="text-[9px] bg-slate-800 text-lime-400 px-1.5 py-0.2 rounded font-mono font-black border border-slate-600">
-                            Trên sân: {countOnPitch}
+                          <span className="text-[9px] bg-slate-950 text-lime-400 px-1.5 py-0.5 rounded-full font-mono font-black border border-lime-500/50 shadow-sm">
+                            Đang xếp: {countOnPitch}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-amber-300 font-mono font-bold">
-                          {pieceDef.cost} điểm
+                      <div className="flex items-center gap-2 mt-1">
+                        {/* High-contrast gold monetary badge */}
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-mono font-black text-[10px] sm:text-xs flex items-center gap-1 border shadow-sm ${
+                            isQueen
+                              ? 'bg-amber-400 text-slate-950 border-amber-300 ring-1 ring-amber-300'
+                              : pieceDef.cost >= 20
+                              ? 'bg-slate-950 text-lime-300 border-lime-400/80'
+                              : 'bg-slate-950 text-amber-300 border-slate-700'
+                          }`}
+                        >
+                          <span>🪙</span>
+                          <span>{pieceDef.cost}đ</span>
                         </span>
-                        <span className="text-[10px] text-slate-300">
+
+                        {/* Refined Role Marker */}
+                        <span
+                          className={`text-[9px] sm:text-[10px] font-black uppercase px-1.5 py-0.5 rounded-full border leading-none ${
+                            pieceDef.role === 'GK'
+                              ? 'bg-amber-400 text-slate-950 border-amber-300'
+                              : pieceDef.role === 'DEF'
+                              ? 'bg-blue-600 text-white border-blue-400'
+                              : pieceDef.role === 'MID'
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                              : 'bg-rose-600 text-white border-rose-400'
+                          }`}
+                        >
                           {pieceDef.role === 'GK'
-                            ? 'Thủ Môn'
+                            ? '🧤 Thủ Môn'
                             : pieceDef.role === 'DEF'
-                            ? 'Hậu Vệ'
+                            ? '🛡️ Hậu Vệ'
                             : pieceDef.role === 'MID'
-                            ? 'Tiền Vệ'
-                            : 'Tiền Đạo'}
+                            ? '⚡ Tiền Vệ'
+                            : '🎯 Tiền Đạo'}
                         </span>
                       </div>
                     </div>
@@ -689,10 +744,10 @@ export default function TacticalSetup({
                         e.stopPropagation();
                         handleSelectPieceTypeToPlace(pieceDef.id);
                       }}
-                      className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all ${
+                      className={`px-3 py-2 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow-md ${
                         isPlacingThis
-                          ? 'bg-lime-400 text-slate-950 shadow-md ring-2 ring-lime-300 animate-pulse'
-                          : 'bg-slate-800 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-600'
+                          ? 'bg-lime-400 text-slate-950 ring-2 ring-lime-300 animate-pulse'
+                          : 'bg-slate-900 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
                       }`}
                     >
                       <span>{isPlacingThis ? '✓ Đang chọn' : '➕ Đặt quân'}</span>
@@ -876,59 +931,19 @@ export default function TacticalSetup({
                         </div>
                       )}
 
-                      {/* 3D PIECE BADGE ON PITCH (ULTRA HIGH CONTRAST & GIANT SYMBOL) */}
-                      {piece && (() => {
-                        const def = getPieceDefinition(piece.typeId);
-                        const isWhiteTeam = piece.team === 'white';
-                        return (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectPiece(piece.id);
-                            }}
-                            className={`relative z-20 w-[94%] h-[94%] rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-200 ${
-                              isSelected
-                                ? 'ring-4 ring-yellow-400 scale-110 shadow-[0_0_25px_rgba(250,204,21,1)] z-30'
-                                : 'hover:scale-105 shadow-[0_6px_14px_rgba(0,0,0,0.5)]'
-                            } ${
-                              isWhiteTeam
-                                ? 'bg-gradient-to-br from-white via-slate-100 to-slate-200 border-[3px] border-slate-900 text-slate-950 ring-1 ring-white/60'
-                                : 'bg-gradient-to-br from-red-500 via-red-600 to-rose-700 border-[3px] border-white text-white ring-2 ring-red-400/80'
-                            }`}
-                          >
-                            {/* Top Left: Role Badge */}
-                            <span
-                              className={`absolute -top-1.5 -left-1 px-1.5 py-[1px] rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-tight shadow-md border leading-none z-10 ${
-                                def.role === 'GK'
-                                  ? 'bg-yellow-400 text-slate-950 border-yellow-300'
-                                  : def.role === 'FWD'
-                                  ? 'bg-rose-600 text-white border-rose-300'
-                                  : def.role === 'MID'
-                                  ? 'bg-blue-600 text-white border-blue-300'
-                                  : 'bg-emerald-600 text-white border-emerald-300'
-                              }`}
-                            >
-                              {def.role}
-                            </span>
-
-                            {/* Bottom Right: Cost Badge */}
-                            <span className="absolute -bottom-1.5 -right-1 px-1.5 py-[1px] rounded-md text-[8px] sm:text-[10px] font-mono font-black bg-slate-950 text-lime-400 border border-lime-400 shadow-md leading-none z-10">
-                              {def.cost}đ
-                            </span>
-
-                            {/* Center GIANT Chess Symbol */}
-                            <span
-                              className={`text-2xl sm:text-3xl md:text-4xl font-black leading-none ${
-                                isWhiteTeam
-                                  ? 'text-slate-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]'
-                                  : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'
-                              }`}
-                            >
-                              {def.symbol}
-                            </span>
-                          </div>
-                        );
-                      })()}
+                      {/* 3D PIECE BADGE ON PITCH (TIER VISUAL HIERARCHY & GOLD MONETARY BADGES) */}
+                      {piece && (
+                        <PieceToken
+                          piece={piece}
+                          isSelected={isSelected}
+                          showCost={true}
+                          showCooldown={false}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectPiece(piece.id);
+                          }}
+                        />
+                      )}
                     </div>
                   );
                 })

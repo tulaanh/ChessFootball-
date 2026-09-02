@@ -14,6 +14,7 @@ import {
   isGoalCell,
   isPieceAdjacentToBall,
 } from '@/engine/engine';
+import PieceToken from './PieceToken';
 
 interface PitchBoardProps {
   board: BoardState;
@@ -162,59 +163,19 @@ export default function PitchBoard({
                     </div>
                   )}
 
-                  {/* 3D Piece Rendering (ULTRA HIGH CONTRAST & GIANT SYMBOLS) */}
-                  {piece && (() => {
-                    const def = getPieceDefinition(piece.typeId);
-                    const isWhiteTeam = piece.team === 'white';
-                    return (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSquareClick();
-                        }}
-                        className={`relative z-10 w-[94%] h-[94%] rounded-xl sm:rounded-2xl flex items-center justify-center p-0.5 transition-all duration-200 ${
-                          piece.team === board.currentTurn ? 'cursor-pointer hover:scale-105' : ''
-                        } ${piece.isStunned ? 'opacity-40 grayscale' : ''} ${
-                          isWhiteTeam
-                            ? 'bg-gradient-to-br from-white via-slate-100 to-slate-200 border-[2.5px] sm:border-[3px] border-slate-900 text-slate-950 shadow-[0_4px_10px_rgba(0,0,0,0.5)] ring-1 ring-white/60'
-                            : 'bg-gradient-to-br from-red-500 via-red-600 to-rose-700 border-[2.5px] sm:border-[3px] border-white text-white shadow-[0_4px_10px_rgba(0,0,0,0.5)] ring-2 ring-red-400/80'
-                        }`}
-                      >
-                        {/* Top Left: Role Badge */}
-                        <span
-                          className={`absolute -top-1 -left-1 px-1 py-[0.5px] rounded text-[7px] sm:text-[9px] font-black uppercase tracking-tight shadow-md border leading-none z-10 ${
-                            def.role === 'GK'
-                              ? 'bg-yellow-400 text-slate-950 border-yellow-300'
-                              : def.role === 'FWD'
-                              ? 'bg-rose-600 text-white border-rose-300'
-                              : def.role === 'MID'
-                              ? 'bg-blue-600 text-white border-blue-300'
-                              : 'bg-emerald-600 text-white border-emerald-300'
-                          }`}
-                        >
-                          {def.role}
-                        </span>
-
-                        {/* Top Right: Cooldown / Stun Badge */}
-                        {piece.abilityCooldown && piece.abilityCooldown > 0 ? (
-                          <span className="absolute -top-1 -right-1 px-1 py-[0.5px] text-[7px] sm:text-[9px] text-amber-300 bg-slate-950 border border-amber-400 rounded font-black leading-none z-10 shadow">
-                            ⏳
-                          </span>
-                        ) : null}
-
-                        {/* Center GIANT Chess Symbol */}
-                        <span
-                          className={`text-xl sm:text-2xl md:text-3xl font-black leading-none ${
-                            isWhiteTeam
-                              ? 'text-slate-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]'
-                              : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'
-                          }`}
-                        >
-                          {def.symbol}
-                        </span>
-                      </div>
-                    );
-                  })()}
+                  {/* 3D Piece Rendering (TIER VISUAL HIERARCHY & SHARP CONTRAST) */}
+                  {piece && (
+                    <PieceToken
+                      piece={piece}
+                      isSelected={isSelected}
+                      showCost={false}
+                      showCooldown={true}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSquareClick();
+                      }}
+                    />
+                  )}
 
                   {/* Ball Rendering */}
                   {isBallHere && (
