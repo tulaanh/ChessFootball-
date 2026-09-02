@@ -240,6 +240,42 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
+  // Quick clear all pieces of the active team except the King
+  const handleClearAllPiecesExceptKing = () => {
+    if (isReadOnly || isCurrentTeamReady) return;
+
+    const kingPiece = currentTeamPieces.find((p) => p.typeId === 'king');
+    if (!kingPiece) return;
+
+    if (currentTeamPieces.length <= 1) {
+      alert('Đội hình hiện tại chỉ có duy nhất quân Vua!');
+      return;
+    }
+
+    const otherTeamPieces = board.pieces.filter((p) => p.team !== activeTabTeam);
+    const nextPieces = [...otherTeamPieces, kingPiece];
+
+    const updatedRoster: TeamRoster = {
+      ...currentRoster,
+      pieces: ['king'],
+    };
+
+    if (isWhite) setWhiteRoster(updatedRoster);
+    else setBlackRoster(updatedRoster);
+
+    const nextBoard: BoardState = {
+      ...board,
+      pieces: nextPieces,
+      selectedPieceId: null,
+      whiteRoster: isWhite ? updatedRoster : whiteRoster,
+      blackRoster: !isWhite ? updatedRoster : blackRoster,
+    };
+
+    setSelectedPieceId(null);
+    setPlacingTypeId(null);
+    syncBoardState(nextBoard);
+  };
+
   // Select / Swap existing piece on pitch
   const handleSelectPiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
@@ -690,24 +726,37 @@ export default function TacticalSetup({
               </span>
             </div>
 
-            {/* Selected piece delete option on pitch */}
-            {selectedPiece && selectedPieceDef && !isReadOnly && !isCurrentTeamReady && (
-              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
-                <span className="text-xs font-bold text-white">
-                  {selectedPieceDef.symbol} {selectedPieceDef.vietnameseName.split(' ')[0]}
-                </span>
-                {selectedPiece.typeId !== 'king' ? (
-                  <button
-                    onClick={() => handleDeletePiece(selectedPiece.id)}
-                    className="px-2 py-0.5 rounded-lg bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-black border border-red-500/40 transition-colors"
-                  >
-                    🗑️ Xóa khỏi sân
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-amber-400 font-bold">🔒 Vua (Thủ Môn)</span>
-                )}
-              </div>
-            )}
+            {/* Selected piece delete option or Quick Clear All option on pitch */}
+            <div className="flex items-center gap-2">
+              {selectedPiece && selectedPieceDef && !isReadOnly && !isCurrentTeamReady && (
+                <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
+                  <span className="text-xs font-bold text-white">
+                    {selectedPieceDef.symbol} {selectedPieceDef.vietnameseName.split(' ')[0]}
+                  </span>
+                  {selectedPiece.typeId !== 'king' ? (
+                    <button
+                      onClick={() => handleDeletePiece(selectedPiece.id)}
+                      className="px-2 py-0.5 rounded-lg bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-black border border-red-500/40 transition-colors"
+                    >
+                      🗑️ Xóa khỏi sân
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-amber-400 font-bold">🔒 Vua (Thủ Môn)</span>
+                  )}
+                </div>
+              )}
+
+              {!isReadOnly && !isCurrentTeamReady && currentTeamPieces.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllPiecesExceptKing}
+                  className="px-3 py-1 bg-red-950/70 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-[11px] font-black rounded-xl transition-all flex items-center gap-1 shadow"
+                  title="Xóa nhanh toàn bộ quân cờ hiện tại trừ quân Vua"
+                >
+                  <span>🧹</span> Xóa Hết Đội Hình (Giữ Vua)
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Grass Field Canvas */}
