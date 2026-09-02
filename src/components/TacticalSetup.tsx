@@ -196,24 +196,25 @@ export default function TacticalSetup({
     syncBoardState(nextBoard);
   };
 
-  // Remove 1 piece of a specific type
-  const handleRemovePieceType = (typeId: string) => {
+  // Remove a piece instance from the team
+  const handleDeletePiece = (pieceId: string) => {
     if (isReadOnly || isCurrentTeamReady) return;
 
-    if (typeId === 'king') {
+    const pieceToDelete = board.pieces.find((p) => p.id === pieceId);
+    if (!pieceToDelete) return;
+
+    // RULE: Exactly 1 King must remain
+    if (pieceToDelete.typeId === 'king') {
       alert('Không thể xóa Vua! Mỗi trận bắt buộc phải có duy nhất 1 con Vua làm Thủ Môn.');
       return;
     }
-
-    const pieceToRemove = currentTeamPieces.find((p) => p.typeId === typeId);
-    if (!pieceToRemove) return;
 
     if (currentTeamPieces.length <= MIN_PIECES_PER_TEAM) {
       alert(`Mỗi đội cần có tối thiểu ${MIN_PIECES_PER_TEAM} quân cờ trên sân!`);
       return;
     }
 
-    const nextPieces = board.pieces.filter((p) => p.id !== pieceToRemove.id);
+    const nextPieces = board.pieces.filter((p) => p.id !== pieceId);
     const newPieceTypeIds = nextPieces
       .filter((p) => p.team === activeTabTeam)
       .map((p) => p.typeId);
@@ -229,12 +230,12 @@ export default function TacticalSetup({
     const nextBoard: BoardState = {
       ...board,
       pieces: nextPieces,
-      selectedPieceId: selectedPieceId === pieceToRemove.id ? null : selectedPieceId,
+      selectedPieceId: selectedPieceId === pieceId ? null : selectedPieceId,
       whiteRoster: isWhite ? updatedRoster : whiteRoster,
       blackRoster: !isWhite ? updatedRoster : blackRoster,
     };
 
-    if (selectedPieceId === pieceToRemove.id) {
+    if (selectedPieceId === pieceId) {
       setSelectedPieceId(null);
     }
 
@@ -394,6 +395,9 @@ export default function TacticalSetup({
   const selectedPiece = board.pieces.find((p) => p.id === selectedPieceId);
   const selectedPieceDef = selectedPiece ? getPieceDefinition(selectedPiece.typeId) : null;
 
+  // Available pieces that CAN BE ADDED (excluding King since King is strictly 1 and already on pitch)
+  const piecesAvailableToAdd = allAvailablePieces.filter((p) => p.id !== 'king');
+
   // Grid coordinates for the active team's half pitch
   const startY = isWhite ? 7 : 0;
   const endY = isWhite ? 14 : 7;
@@ -484,40 +488,39 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Layout: Left Piece Types Catalog + Right Grass Pitch */}
+      {/* Main Layout: Left Available Pieces to Add + Right Grass Pitch */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: Clean Piece Types List with [+] / [-] quantity controls */}
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (Kho quân cờ có thể thêm) (~ 45% width / 5 cols) */}
         <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
-            <span className="text-sm sm:text-base font-black text-white">
-              CÁC LOẠI QUÂN CỜ
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-lime-400 font-black px-2 py-0.5 rounded-full bg-lime-950 border border-lime-500/40">
+            <div>
+              <span className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+                <span>➕</span> KHO QUÂN CÓ THỂ THÊM
+              </span>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Nhấp để tuyển quân cờ mới vào sân bóng
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-lime-400 font-black px-2 py-1 rounded-xl bg-lime-950/80 border border-lime-500/40">
                 {currentTeamPieces.length}/{MAX_PIECES_PER_TEAM} Cầu Thủ
               </span>
             </div>
           </div>
 
-          {/* Piece Types List */}
+          {/* Available Pieces List */}
           <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar max-h-[460px]">
-            {allAvailablePieces.map((pieceDef) => {
-              const isKing = pieceDef.id === 'king';
-              const currentCount = currentTeamPieces.filter((p) => p.typeId === pieceDef.id).length;
-              
-              // Rules
-              const cannotAddMore = isReadOnly || isCurrentTeamReady || currentTeamPieces.length >= MAX_PIECES_PER_TEAM || (isKing && currentCount >= 1) || (totalCost + pieceDef.cost > SALARY_CAP);
-              const cannotRemove = isReadOnly || isCurrentTeamReady || isKing || currentCount === 0 || currentTeamPieces.length <= MIN_PIECES_PER_TEAM;
+            {piecesAvailableToAdd.map((pieceDef) => {
+              const countOnPitch = currentTeamPieces.filter((p) => p.typeId === pieceDef.id).length;
+              const canAfford = remainingBudget >= pieceDef.cost;
+              const isSquadFull = currentTeamPieces.length >= MAX_PIECES_PER_TEAM;
+              const canAdd = !isReadOnly && !isCurrentTeamReady && !isSquadFull && canAfford;
 
               return (
                 <div
                   key={pieceDef.id}
-                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                    currentCount > 0
-                      ? 'bg-[#10172a] border-slate-700/90 shadow-md'
-                      : 'bg-[#0d121f]/60 border-slate-850 opacity-70'
-                  }`}
+                  className="flex items-center justify-between p-3 rounded-2xl border border-slate-700/80 bg-[#10172a] hover:border-lime-400/50 transition-all shadow-sm"
                 >
                   {/* Left: Symbol & Name & Role */}
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -529,9 +532,9 @@ export default function TacticalSetup({
                         <span className="text-xs sm:text-sm font-bold text-white truncate">
                           {pieceDef.vietnameseName}
                         </span>
-                        {isKing && (
-                          <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.2 rounded font-black border border-yellow-500/30">
-                            1 DUY NHẤT
+                        {countOnPitch > 0 && (
+                          <span className="text-[9px] bg-slate-800 text-lime-400 px-1.5 py-0.2 rounded font-mono font-black border border-slate-700">
+                            Trên sân: {countOnPitch}
                           </span>
                         )}
                       </div>
@@ -552,60 +555,21 @@ export default function TacticalSetup({
                     </div>
                   </div>
 
-                  {/* Right: Quantity Adjuster [-] [Count] [+] */}
-                  {!isReadOnly && !isCurrentTeamReady ? (
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Decrease button */}
-                      <button
-                        type="button"
-                        disabled={cannotRemove}
-                        onClick={() => handleRemovePieceType(pieceDef.id)}
-                        className="w-8 h-8 rounded-xl bg-red-950/70 hover:bg-red-600 disabled:opacity-30 disabled:hover:bg-red-950/70 text-red-300 hover:text-white border border-red-500/40 flex items-center justify-center font-black text-sm transition-all"
-                      >
-                        −
-                      </button>
-
-                      {/* Quantity badge */}
-                      <span className={`w-8 text-center font-mono font-black text-sm ${currentCount > 0 ? 'text-lime-400' : 'text-slate-500'}`}>
-                        x{currentCount}
-                      </span>
-
-                      {/* Increase button */}
-                      <button
-                        type="button"
-                        disabled={cannotAddMore}
-                        onClick={() => handleAddPieceType(pieceDef.id)}
-                        className="w-8 h-8 rounded-xl bg-lime-950/70 hover:bg-lime-500 disabled:opacity-30 disabled:hover:bg-lime-950/70 text-lime-300 hover:text-slate-950 border border-lime-500/40 flex items-center justify-center font-black text-sm transition-all"
-                      >
-                        +
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="shrink-0 font-mono font-black text-sm text-lime-400 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">
-                      x{currentCount}
-                    </div>
+                  {/* Right: Add Button */}
+                  {!isReadOnly && !isCurrentTeamReady && (
+                    <button
+                      type="button"
+                      disabled={!canAdd}
+                      onClick={() => handleAddPieceType(pieceDef.id)}
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 disabled:opacity-30 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black text-xs shadow-md flex items-center gap-1 shrink-0 transition-all"
+                    >
+                      <span>➕</span> Thêm
+                    </button>
                   )}
                 </div>
               );
             })}
           </div>
-
-          {/* Selected Piece Info Box on Pitch */}
-          {selectedPiece && selectedPieceDef && (
-            <div className="mx-3 mb-2 p-2.5 bg-slate-950/90 rounded-2xl border border-lime-400/40 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{selectedPieceDef.symbol}</span>
-                <div>
-                  <span className="text-xs font-bold text-white">
-                    Đang chọn: {selectedPieceDef.vietnameseName}
-                  </span>
-                  <p className="text-[10px] text-lime-300">
-                    Nhấp vào <strong>ô trống</strong> trên sân để di dời, hoặc nhấp <strong>quân khác</strong> để hoán đổi
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Bottom Salary Cap Bar & Ready Confirmation Button */}
           <div className="p-3 bg-[#0d121f] border-t border-slate-800 flex flex-col gap-2.5">
@@ -651,9 +615,9 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Clean Piece Cards (~ 55% width / 7 cols) */}
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 55% width / 7 cols) */}
         <div className="lg:col-span-7 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
-          {/* Pitch Top Bar: Info Badge */}
+          {/* Pitch Top Bar: Info Badge & Selected Piece Delete Bar */}
           <div className="flex items-center justify-between px-2 mb-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-lime-400 animate-pulse" />
@@ -661,9 +625,25 @@ export default function TacticalSetup({
                 SÂN BỐ TRÍ: {isWhite ? 'ĐỘI TRẮNG (SÂN DƯỚI)' : 'ĐỘI ĐỎ (SÂN TRÊN)'}
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">
-              👉 Nhấp quân để chọn/hoán đổi, nhấp ô trống để dời
-            </span>
+
+            {/* Selected piece delete option on pitch */}
+            {selectedPiece && selectedPieceDef && !isReadOnly && !isCurrentTeamReady && (
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
+                <span className="text-xs font-bold text-white">
+                  {selectedPieceDef.symbol} {selectedPieceDef.vietnameseName.split(' ')[0]}
+                </span>
+                {selectedPiece.typeId !== 'king' ? (
+                  <button
+                    onClick={() => handleDeletePiece(selectedPiece.id)}
+                    className="px-2 py-0.5 rounded-lg bg-red-950 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-black border border-red-500/40 transition-colors"
+                  >
+                    🗑️ Xóa khỏi sân
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-amber-400 font-bold">🔒 Vua (Thủ Môn)</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Grass Field Canvas */}
