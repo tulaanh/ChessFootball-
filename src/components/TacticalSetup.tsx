@@ -876,7 +876,7 @@ export default function TacticalSetup({
                         </div>
                       )}
 
-                      {/* 3D PIECE BADGE ON PITCH */}
+                      {/* 3D PIECE BADGE ON PITCH (ULTRA HIGH CONTRAST & GIANT SYMBOL) */}
                       {piece && (() => {
                         const def = getPieceDefinition(piece.typeId);
                         const isWhiteTeam = piece.team === 'white';
@@ -886,57 +886,46 @@ export default function TacticalSetup({
                               e.stopPropagation();
                               handleSelectPiece(piece.id);
                             }}
-                            className={`relative z-20 w-[94%] h-[94%] rounded-xl flex flex-col items-center justify-between p-0.5 sm:p-1 cursor-pointer transition-all duration-200 shadow-xl ${
+                            className={`relative z-20 w-[94%] h-[94%] rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-200 ${
                               isSelected
-                                ? 'ring-4 ring-yellow-400 scale-110 shadow-[0_0_25px_rgba(250,204,21,0.9)] z-30'
-                                : 'hover:scale-105'
+                                ? 'ring-4 ring-yellow-400 scale-110 shadow-[0_0_25px_rgba(250,204,21,1)] z-30'
+                                : 'hover:scale-105 shadow-[0_6px_14px_rgba(0,0,0,0.5)]'
                             } ${
                               isWhiteTeam
-                                ? 'bg-gradient-to-b from-white via-slate-100 to-slate-200 border-2 border-amber-400 text-slate-950'
-                                : 'bg-gradient-to-b from-rose-500 via-red-600 to-red-800 border-2 border-rose-300 text-white'
+                                ? 'bg-gradient-to-br from-white via-slate-100 to-slate-200 border-[3px] border-slate-900 text-slate-950 ring-1 ring-white/60'
+                                : 'bg-gradient-to-br from-red-500 via-red-600 to-rose-700 border-[3px] border-white text-white ring-2 ring-red-400/80'
                             }`}
                           >
-                            {/* Top Badge: Role */}
-                            <div className="w-full flex items-center justify-between px-0.5">
-                              <span
-                                className={`text-[7px] sm:text-[9px] font-black uppercase px-1 rounded leading-none ${
-                                  def.role === 'GK'
-                                    ? 'bg-yellow-400 text-slate-950 font-black'
-                                    : def.role === 'FWD'
-                                    ? 'bg-rose-500 text-white'
-                                    : def.role === 'MID'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-emerald-600 text-white'
-                                }`}
-                              >
-                                {def.role}
-                              </span>
-                              <span className="text-[7px] sm:text-[9px] font-mono font-black text-amber-300 bg-slate-950/80 px-0.5 rounded leading-none">
-                                {def.cost}đ
-                              </span>
-                            </div>
+                            {/* Top Left: Role Badge */}
+                            <span
+                              className={`absolute -top-1.5 -left-1 px-1.5 py-[1px] rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-tight shadow-md border leading-none z-10 ${
+                                def.role === 'GK'
+                                  ? 'bg-yellow-400 text-slate-950 border-yellow-300'
+                                  : def.role === 'FWD'
+                                  ? 'bg-rose-600 text-white border-rose-300'
+                                  : def.role === 'MID'
+                                  ? 'bg-blue-600 text-white border-blue-300'
+                                  : 'bg-emerald-600 text-white border-emerald-300'
+                              }`}
+                            >
+                              {def.role}
+                            </span>
 
-                            {/* Center Big Chess Symbol */}
-                            <div className="flex-1 flex items-center justify-center">
-                              <span
-                                className={`text-lg sm:text-2xl md:text-3xl font-black leading-none drop-shadow-md ${
-                                  isWhiteTeam ? 'text-amber-950' : 'text-white'
-                                }`}
-                              >
-                                {def.symbol}
-                              </span>
-                            </div>
+                            {/* Bottom Right: Cost Badge */}
+                            <span className="absolute -bottom-1.5 -right-1 px-1.5 py-[1px] rounded-md text-[8px] sm:text-[10px] font-mono font-black bg-slate-950 text-lime-400 border border-lime-400 shadow-md leading-none z-10">
+                              {def.cost}đ
+                            </span>
 
-                            {/* Bottom Name Label */}
-                            <div className="w-full text-center">
-                              <span
-                                className={`text-[7px] sm:text-[8px] font-extrabold truncate block px-0.5 leading-none ${
-                                  isWhiteTeam ? 'text-slate-800' : 'text-slate-100'
-                                }`}
-                              >
-                                {def.vietnameseName.split(' ')[0]}
-                              </span>
-                            </div>
+                            {/* Center GIANT Chess Symbol */}
+                            <span
+                              className={`text-2xl sm:text-3xl md:text-4xl font-black leading-none ${
+                                isWhiteTeam
+                                  ? 'text-slate-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]'
+                                  : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'
+                              }`}
+                            >
+                              {def.symbol}
+                            </span>
                           </div>
                         );
                       })()}

@@ -162,7 +162,7 @@ export default function PitchBoard({
                     </div>
                   )}
 
-                  {/* 3D Piece Rendering */}
+                  {/* 3D Piece Rendering (ULTRA HIGH CONTRAST & GIANT SYMBOLS) */}
                   {piece && (() => {
                     const def = getPieceDefinition(piece.typeId);
                     const isWhiteTeam = piece.team === 'white';
@@ -172,57 +172,46 @@ export default function PitchBoard({
                           e.stopPropagation();
                           handleSquareClick();
                         }}
-                        className={`relative z-10 w-[92%] h-[92%] rounded-lg sm:rounded-xl flex flex-col items-center justify-between p-0.5 transition-all duration-200 shadow-xl ${
+                        className={`relative z-10 w-[94%] h-[94%] rounded-xl sm:rounded-2xl flex items-center justify-center p-0.5 transition-all duration-200 ${
                           piece.team === board.currentTurn ? 'cursor-pointer hover:scale-105' : ''
                         } ${piece.isStunned ? 'opacity-40 grayscale' : ''} ${
                           isWhiteTeam
-                            ? 'bg-gradient-to-b from-white via-slate-100 to-slate-200 border-2 border-amber-400 text-slate-950 shadow-[0_3px_8px_rgba(0,0,0,0.35)]'
-                            : 'bg-gradient-to-b from-rose-500 via-red-600 to-red-800 border-2 border-rose-300 text-white shadow-[0_3px_8px_rgba(0,0,0,0.4)]'
+                            ? 'bg-gradient-to-br from-white via-slate-100 to-slate-200 border-[2.5px] sm:border-[3px] border-slate-900 text-slate-950 shadow-[0_4px_10px_rgba(0,0,0,0.5)] ring-1 ring-white/60'
+                            : 'bg-gradient-to-br from-red-500 via-red-600 to-rose-700 border-[2.5px] sm:border-[3px] border-white text-white shadow-[0_4px_10px_rgba(0,0,0,0.5)] ring-2 ring-red-400/80'
                         }`}
                       >
-                        {/* Top: Role Tag */}
-                        <div className="w-full flex items-center justify-between px-0.5 leading-none">
-                          <span
-                            className={`text-[6px] sm:text-[8px] font-black uppercase px-0.5 rounded leading-none ${
-                              def.role === 'GK'
-                                ? 'bg-yellow-400 text-slate-950'
-                                : def.role === 'FWD'
-                                ? 'bg-rose-500 text-white'
-                                : def.role === 'MID'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-emerald-600 text-white'
-                            }`}
-                          >
-                            {def.role}
-                          </span>
-                          {piece.abilityCooldown && piece.abilityCooldown > 0 ? (
-                            <span className="text-[6px] sm:text-[7px] text-amber-300 bg-slate-950 px-0.5 rounded font-black">
-                              ⏳
-                            </span>
-                          ) : null}
-                        </div>
+                        {/* Top Left: Role Badge */}
+                        <span
+                          className={`absolute -top-1 -left-1 px-1 py-[0.5px] rounded text-[7px] sm:text-[9px] font-black uppercase tracking-tight shadow-md border leading-none z-10 ${
+                            def.role === 'GK'
+                              ? 'bg-yellow-400 text-slate-950 border-yellow-300'
+                              : def.role === 'FWD'
+                              ? 'bg-rose-600 text-white border-rose-300'
+                              : def.role === 'MID'
+                              ? 'bg-blue-600 text-white border-blue-300'
+                              : 'bg-emerald-600 text-white border-emerald-300'
+                          }`}
+                        >
+                          {def.role}
+                        </span>
 
-                        {/* Center: Big Chess Symbol */}
-                        <div className="flex-1 flex items-center justify-center leading-none">
-                          <span
-                            className={`text-sm sm:text-lg md:text-xl font-black leading-none drop-shadow-md ${
-                              isWhiteTeam ? 'text-amber-950' : 'text-white'
-                            }`}
-                          >
-                            {def.symbol}
+                        {/* Top Right: Cooldown / Stun Badge */}
+                        {piece.abilityCooldown && piece.abilityCooldown > 0 ? (
+                          <span className="absolute -top-1 -right-1 px-1 py-[0.5px] text-[7px] sm:text-[9px] text-amber-300 bg-slate-950 border border-amber-400 rounded font-black leading-none z-10 shadow">
+                            ⏳
                           </span>
-                        </div>
+                        ) : null}
 
-                        {/* Bottom: Name */}
-                        <div className="w-full text-center leading-none">
-                          <span
-                            className={`text-[6px] sm:text-[8px] font-extrabold truncate block px-0.5 leading-none ${
-                              isWhiteTeam ? 'text-slate-800' : 'text-slate-100'
-                            }`}
-                          >
-                            {def.vietnameseName.split(' ')[0]}
-                          </span>
-                        </div>
+                        {/* Center GIANT Chess Symbol */}
+                        <span
+                          className={`text-xl sm:text-2xl md:text-3xl font-black leading-none ${
+                            isWhiteTeam
+                              ? 'text-slate-950 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]'
+                              : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'
+                          }`}
+                        >
+                          {def.symbol}
+                        </span>
                       </div>
                     );
                   })()}
