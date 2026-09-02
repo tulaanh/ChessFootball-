@@ -56,7 +56,7 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
           {/* OFFLINE CARD */}
           <button
             onClick={onStartOffline}
-            className="group relative flex flex-col items-start p-6 rounded-3xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 border-2 border-slate-700/80 hover:border-emerald-400 transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:-translate-y-1 text-left overflow-hidden"
+            className="group relative flex flex-col items-start p-6 rounded-3xl bg-slate-800/90 border-2 border-slate-700 hover:border-emerald-400 transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] hover:-translate-y-1 text-left overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
             
@@ -72,7 +72,7 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
               Chơi Offline
             </h3>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               Tùy chỉnh 11 cầu thủ và sơ đồ chiến thuật FM cho cả 2 đội, sau đó so tài trực tiếp trên cùng một thiết bị.
             </p>
 
@@ -85,7 +85,7 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
           {/* ONLINE CARD */}
           <button
             onClick={() => setIsOnlineLobbyOpen(true)}
-            className="group relative flex flex-col items-start p-6 rounded-3xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 border-2 border-slate-700/80 hover:border-cyan-400 transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:-translate-y-1 text-left overflow-hidden"
+            className="group relative flex flex-col items-start p-6 rounded-3xl bg-slate-800/90 border-2 border-slate-700 hover:border-cyan-400 transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.25)] hover:-translate-y-1 text-left overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all pointer-events-none" />
 
@@ -101,31 +101,33 @@ export default function MainMenu({ onStartOffline, onStartOnline }: MainMenuProp
               Chơi Online
             </h3>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Tạo phòng đấu hoặc nhập mã mời để so tài chiến thuật thời gian thực với bạn bè qua kết nối mạng P2P.
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Tạo phòng đấu hoặc nhập ID phòng để thách đấu bạn bè qua mạng P2P thời gian thực với đồng bộ tức thì.
             </p>
 
             <div className="mt-6 flex items-center gap-2 text-xs font-black text-cyan-400 group-hover:translate-x-1 transition-transform">
-              <span>MỞ SẢNH ĐẤU</span>
+              <span>VÀO SẢNH CHỜ ONLINE</span>
               <span>→</span>
             </div>
           </button>
         </div>
 
-        {/* Secondary Auxiliary Buttons */}
+        {/* Secondary Navigation Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => setIsRulesOpen(true)}
-            className="px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400/50 text-xs font-bold text-slate-300 hover:text-white transition-all shadow-md flex items-center gap-2"
+            className="px-5 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-2 transition-all shadow-md"
           >
-            <span>📖</span> Hướng Dẫn & Luật Chơi
+            <span>📖</span>
+            <span>Hướng Dẫn Luật Chơi</span>
           </button>
 
           <button
             onClick={() => setIsRegistryOpen(true)}
-            className="px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-xs font-bold text-slate-300 hover:text-white transition-all shadow-md flex items-center gap-2"
+            className="px-5 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-cyan-300 flex items-center gap-2 transition-all shadow-md"
           >
-            <span>📚</span> Bách Khoa Quân Cờ
+            <span>🛡️</span>
+            <span>Bách Khoa Quân Cờ</span>
           </button>
         </div>
       </div>

@@ -474,11 +474,11 @@ export default function TacticalSetup({
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col items-center py-2 px-2 sm:px-4 text-slate-100 min-h-[90vh]">
       {/* Top Header & Team Switcher Bar */}
-      <div className="w-full bg-[#111827] border border-slate-800 rounded-2xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
+      <div className="w-full bg-slate-800/95 border border-slate-700 rounded-2xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <button
             onClick={onBackToMenu}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 flex items-center gap-1.5 transition-colors border border-slate-700"
+            className="px-3 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors border border-slate-600"
           >
             <span>←</span> Menu
           </button>
@@ -494,7 +494,7 @@ export default function TacticalSetup({
           )}
 
           {/* Dual Team Switcher Tabs */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700">
             <button
               onClick={() => {
                 if (multiplayerMode === 'local' || onlineRole === 'white') {
@@ -506,7 +506,7 @@ export default function TacticalSetup({
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
                 activeTabTeam === 'white'
                   ? 'bg-amber-400 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               <span>♔</span>
@@ -514,7 +514,7 @@ export default function TacticalSetup({
               {whiteReady ? (
                 <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">✓ SẴN SÀNG</span>
               ) : (
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full">⏳ Đang xếp</span>
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full">⏳ Đang xếp</span>
               )}
             </button>
 
@@ -529,7 +529,7 @@ export default function TacticalSetup({
               className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all ${
                 activeTabTeam === 'black'
                   ? 'bg-red-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               <span>♚</span>
@@ -537,7 +537,7 @@ export default function TacticalSetup({
               {blackReady ? (
                 <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">✓ SẴN SÀNG</span>
               ) : (
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full">⏳ Đang xếp</span>
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full">⏳ Đang xếp</span>
               )}
             </button>
           </div>
@@ -561,7 +561,7 @@ export default function TacticalSetup({
 
           <button
             onClick={() => setIsRegistryOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-cyan-500/30 flex items-center gap-1"
+            className="px-3 py-1.5 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-xs font-bold text-cyan-300 border border-cyan-500/40 flex items-center gap-1"
           >
             <span>📚</span> Bách Khoa
           </button>
@@ -571,14 +571,14 @@ export default function TacticalSetup({
       {/* Main Layout: Left Available Pieces to Add + Right Grass Pitch */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 45% width / 5 cols) */}
-        <div className="lg:col-span-5 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="lg:col-span-5 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
-          <div className="p-3.5 bg-[#0d121f] border-b border-slate-800 flex items-center justify-between">
+          <div className="p-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
             <div>
               <span className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
                 <span>➕</span> CÁC QUÂN CÓ THỂ THÊM
               </span>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-300 mt-0.5">
                 Bấm vào quân cờ để chọn, sau đó nhấp vào ô trống trên sân cỏ
               </p>
             </div>
@@ -631,13 +631,13 @@ export default function TacticalSetup({
                     isPlacingThis
                       ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)] text-white'
                       : canAdd
-                      ? 'bg-[#10172a] border-slate-700/80 hover:border-lime-400/60 hover:bg-[#18243c] text-slate-200 shadow-sm'
-                      : 'bg-[#0d121f]/60 border-slate-850 opacity-40 cursor-not-allowed text-slate-500'
+                      ? 'bg-slate-700/60 border-slate-600/80 hover:border-lime-400/60 hover:bg-slate-700 text-slate-100 shadow-sm'
+                      : 'bg-slate-800/40 border-slate-700/40 opacity-40 cursor-not-allowed text-slate-400'
                   }`}
                 >
                   {/* Left: Symbol & Name & Role */}
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shrink-0 shadow">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-2xl shrink-0 shadow">
                       {pieceDef.symbol}
                     </div>
                     <div className="truncate">
@@ -646,7 +646,7 @@ export default function TacticalSetup({
                           {pieceDef.vietnameseName}
                         </span>
                         {countOnPitch > 0 && (
-                          <span className="text-[9px] bg-slate-800 text-lime-400 px-1.5 py-0.2 rounded font-mono font-black border border-slate-700">
+                          <span className="text-[9px] bg-slate-800 text-lime-400 px-1.5 py-0.2 rounded font-mono font-black border border-slate-600">
                             Trên sân: {countOnPitch}
                           </span>
                         )}
@@ -655,7 +655,7 @@ export default function TacticalSetup({
                         <span className="text-[10px] text-amber-300 font-mono font-bold">
                           {pieceDef.cost} điểm
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-slate-300">
                           {pieceDef.role === 'GK'
                             ? 'Thủ Môn'
                             : pieceDef.role === 'DEF'
@@ -680,7 +680,7 @@ export default function TacticalSetup({
                       className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all ${
                         isPlacingThis
                           ? 'bg-lime-400 text-slate-950 shadow-md ring-2 ring-lime-300 animate-pulse'
-                          : 'bg-slate-800 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
+                          : 'bg-slate-800 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-600'
                       }`}
                     >
                       <span>{isPlacingThis ? '✓ Đang chọn' : '➕ Đặt quân'}</span>
@@ -692,15 +692,15 @@ export default function TacticalSetup({
           </div>
 
           {/* Bottom Salary Cap Bar & Ready Confirmation Button */}
-          <div className="p-3 bg-[#0d121f] border-t border-slate-800 flex flex-col gap-2.5">
+          <div className="p-3 bg-slate-800 border-t border-slate-700 flex flex-col gap-2.5">
             <div className="flex items-center justify-between text-xs px-1">
-              <span className="text-[11px] font-bold text-slate-400">QUỸ LƯƠNG ĐỘI HÌNH:</span>
-              <span className={`font-mono font-black ${isOverBudget ? 'text-red-400' : 'text-lime-400'}`}>
+              <span className="text-[11px] font-bold text-slate-300">QUỸ LƯƠNG ĐỘI HÌNH:</span>
+              <span className={`font-mono font-black ${isOverBudget ? 'text-rose-400' : 'text-lime-400'}`}>
                 {totalCost} / {SALARY_CAP} Điểm {isOverBudget && `(Vượt ${Math.abs(remainingBudget)}đ)`}
               </span>
             </div>
 
-            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
               <div
                 className={`h-full transition-all duration-300 ${
                   isOverBudget ? 'bg-red-500' : 'bg-gradient-to-r from-lime-400 to-emerald-400'
@@ -715,7 +715,7 @@ export default function TacticalSetup({
                 onClick={handleToggleReady}
                 className={`w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl transition-all ${
                   isCurrentTeamReady
-                    ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/50'
+                    ? 'bg-slate-700 hover:bg-slate-600 text-amber-400 border border-amber-500/50'
                     : isOverBudget
                     ? 'bg-red-500/20 text-red-300 border border-red-500/40 cursor-not-allowed opacity-50'
                     : 'bg-gradient-to-r from-lime-400 to-emerald-500 hover:from-lime-300 hover:to-emerald-400 text-slate-950 shadow-[0_0_20px_rgba(190,242,100,0.3)] transform hover:scale-[1.02]'
@@ -736,7 +736,7 @@ export default function TacticalSetup({
         </div>
 
         {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 55% width / 7 cols) */}
-        <div className="lg:col-span-7 flex flex-col bg-[#141b2d] border border-slate-800 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
+        <div className="lg:col-span-7 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-4 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge & Selected Piece Delete Bar */}
           <div className="flex items-center justify-between px-2 mb-2">
             <div className="flex items-center gap-2">
@@ -749,7 +749,7 @@ export default function TacticalSetup({
             {/* Selected piece delete option or Quick Clear All option on pitch */}
             <div className="flex items-center gap-2">
               {selectedPiece && selectedPieceDef && !isReadOnly && !isCurrentTeamReady && (
-                <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
+                <div className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-xl border border-lime-400/40 animate-fade-in">
                   <span className="text-xs font-bold text-white">
                     {selectedPieceDef.symbol} {selectedPieceDef.vietnameseName.split(' ')[0]}
                   </span>
@@ -780,10 +780,10 @@ export default function TacticalSetup({
           </div>
 
           {/* Grass Field Canvas */}
-          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 bg-[#15803d] flex items-center justify-center p-1 sm:p-2 min-h-[480px]">
+          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-800 flex items-center justify-center p-1 sm:p-2 min-h-[480px]">
             {/* Field Pattern & Markings */}
             <div
-              className="grid gap-[2px] relative w-full h-full bg-[#166534] p-1.5 rounded-xl"
+              className="grid gap-[2px] relative w-full h-full bg-[#14532d] p-1.5 rounded-xl border border-slate-600/50"
               style={{
                 gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rowIndices.length}, minmax(0, 1fr))`,

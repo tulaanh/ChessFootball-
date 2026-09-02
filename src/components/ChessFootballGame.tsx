@@ -244,12 +244,12 @@ export default function ChessFootballGame({
       ))}
 
       {/* Top Global Navigation Bar */}
-      <div className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+      <div className="w-full bg-slate-800/95 border border-slate-700 rounded-2xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-2 shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-2">
           {onBackToMenu && (
             <button
               onClick={onBackToMenu}
-              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-lg border border-slate-700 flex items-center gap-1"
+              className="px-2.5 py-1 bg-slate-700/80 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-lg border border-slate-600 flex items-center gap-1"
             >
               <span>←</span> Menu
             </button>
@@ -258,21 +258,21 @@ export default function ChessFootballGame({
           {onBackToSetup && (
             <button
               onClick={() => onBackToSetup(board)}
-              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/30 flex items-center gap-1"
+              className="px-2.5 py-1 bg-slate-700/80 hover:bg-slate-600 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 flex items-center gap-1"
             >
               <span>⚙️</span> Xếp Đội Hình
             </button>
           )}
 
-          <div className="h-4 w-[1px] bg-slate-800 mx-1 hidden sm:block" />
+          <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block" />
 
           {multiplayerMode === 'online' ? (
-            <span className="text-xs bg-emerald-950 text-emerald-400 font-black px-2.5 py-0.5 rounded-full border border-emerald-700 flex items-center gap-1.5">
+            <span className="text-xs bg-emerald-900/60 text-emerald-300 font-black px-2.5 py-0.5 rounded-full border border-emerald-600 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>ONLINE: {onlineRoomId} ({onlineRole === 'white' ? 'Trắng ♔' : 'Đỏ ♚'})</span>
             </span>
           ) : (
-            <span className="text-xs bg-slate-800 text-slate-300 font-bold px-2.5 py-0.5 rounded-full border border-slate-700">
+            <span className="text-xs bg-slate-700/80 text-slate-300 font-bold px-2.5 py-0.5 rounded-full border border-slate-600">
               Đá Cùng Máy (Local 2P)
             </span>
           )}
@@ -280,8 +280,8 @@ export default function ChessFootballGame({
 
         {/* Emote Quick Bar & Rules */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded-xl border border-slate-800">
-            <span className="text-[10px] text-slate-400 mr-1 hidden sm:inline">Emote:</span>
+          <div className="flex items-center gap-1 bg-slate-700/80 px-2 py-0.5 rounded-xl border border-slate-600">
+            <span className="text-[10px] text-slate-300 mr-1 hidden sm:inline">Emote:</span>
             {['⚽', '🔥', '😱', '👏', '🏆', '🤣'].map((emoji) => (
               <button
                 key={emoji}
@@ -295,7 +295,7 @@ export default function ChessFootballGame({
 
           <button
             onClick={() => setRulesModalOpen(true)}
-            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-xl border border-slate-800"
+            className="px-2.5 py-1 bg-slate-700/80 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-xl border border-slate-600"
           >
             📖 Luật
           </button>
@@ -303,7 +303,7 @@ export default function ChessFootballGame({
       </div>
 
       {/* Top Header & Scoreboard Banner */}
-      <div className="w-full bg-slate-900 border-2 border-slate-700 rounded-3xl p-3 sm:p-5 mb-4 shadow-2xl backdrop-blur-md">
+      <div className="w-full bg-slate-800/90 border-2 border-slate-700 rounded-3xl p-3 sm:p-5 mb-4 shadow-2xl backdrop-blur-md">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Team White */}
           <div className="flex items-center gap-3 w-full md:w-1/3 justify-start">
@@ -312,18 +312,18 @@ export default function ChessFootballGame({
             </div>
             <div>
               <h3 className="font-extrabold text-base sm:text-lg text-white">{whiteRoster.teamName}</h3>
-              <p className="text-[11px] text-slate-400">Tấn công Khung thành Đỏ (trên)</p>
+              <p className="text-[11px] text-slate-300">Tấn công Khung thành Đỏ (trên)</p>
             </div>
           </div>
 
           {/* Electronic Scoreboard */}
           <div className="flex flex-col items-center justify-center w-full md:w-1/3 text-center">
-            <div className="bg-black/90 px-6 sm:px-8 py-1.5 rounded-2xl border-2 border-yellow-500/80 shadow-[0_0_20px_rgba(234,179,8,0.3)] inline-flex items-center justify-center gap-3 min-w-[150px]">
+            <div className="bg-slate-900/90 px-6 sm:px-8 py-1.5 rounded-2xl border-2 border-yellow-500/80 shadow-[0_0_20px_rgba(234,179,8,0.25)] inline-flex items-center justify-center gap-3 min-w-[150px]">
               <span className="w-10 sm:w-12 text-center text-3xl sm:text-5xl font-black text-amber-400 font-mono">
                 {board.score.white}
               </span>
-              <span className="text-xl sm:text-2xl text-slate-500 font-bold">:</span>
-              <span className="w-10 sm:w-12 text-center text-3xl sm:text-5xl font-black text-red-500 font-mono">
+              <span className="text-xl sm:text-2xl text-slate-400 font-bold">:</span>
+              <span className="w-10 sm:w-12 text-center text-3xl sm:text-5xl font-black text-rose-400 font-mono">
                 {board.score.black}
               </span>
             </div>
@@ -340,7 +340,7 @@ export default function ChessFootballGame({
                 <span>{isWhiteTurn ? 'ĐỘI TRẮNG' : 'ĐỘI ĐỎ'}</span>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-700">
+              <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-700">
                 <span className="text-xs font-black text-amber-400 animate-pulse">
                   ⚡ Còn {board.remainingAP}/2 Lượt
                 </span>
@@ -348,7 +348,7 @@ export default function ChessFootballGame({
             </div>
 
             {multiplayerMode === 'online' && !isMyTurnInOnline && (
-              <p className="text-[11px] text-amber-300/90 font-bold mt-1 animate-pulse">
+              <p className="text-[11px] text-amber-300 font-bold mt-1 animate-pulse">
                 ⏳ Đang chờ đối thủ thực hiện nước đi...
               </p>
             )}
@@ -358,7 +358,7 @@ export default function ChessFootballGame({
           <div className="flex items-center gap-3 w-full md:w-1/3 justify-end">
             <div className="text-right">
               <h3 className="font-extrabold text-base sm:text-lg text-white">{blackRoster.teamName}</h3>
-              <p className="text-[11px] text-slate-400">Tấn công Khung thành Trắng (dưới)</p>
+              <p className="text-[11px] text-slate-300">Tấn công Khung thành Trắng (dưới)</p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-red-600/20 border-2 border-red-500 flex items-center justify-center text-2xl font-black text-red-400 shadow-lg">
               ♚
@@ -371,7 +371,7 @@ export default function ChessFootballGame({
       <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Column: Action Control Panel */}
         <div className="lg:col-span-3 flex flex-col gap-3">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 shadow-xl">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl">
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
               <span>🎮</span> Thao Tác Điều Khiển
             </h4>
@@ -381,19 +381,19 @@ export default function ChessFootballGame({
                 {(() => {
                   const def = getPieceDefinition(selectedPiece.typeId);
                   return (
-                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 shadow-inner">
+                    <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-700 shadow-inner">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shadow">
+                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-2xl shadow">
                           {def.symbol}
                         </div>
                         <div className="flex-1 overflow-hidden">
                           <div className="flex items-center justify-between">
                             <span className="text-xs sm:text-sm font-black text-white truncate">{def.vietnameseName}</span>
-                            <span className="text-[9px] bg-cyan-950 text-cyan-400 font-bold px-1.5 py-0.2 rounded uppercase border border-cyan-800/60">
+                            <span className="text-[9px] bg-cyan-900/60 text-cyan-300 font-bold px-1.5 py-0.2 rounded uppercase border border-cyan-700">
                               {def.role}
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-slate-300">
                             Vị trí: ({selectedPiece.position.x}, {selectedPiece.position.y})
                           </p>
                         </div>

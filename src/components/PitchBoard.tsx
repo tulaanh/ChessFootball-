@@ -48,17 +48,17 @@ export default function PitchBoard({
   return (
     <div className="relative select-none flex flex-col items-center">
       {/* Top Goal Post Frame */}
-      <div className="w-full flex justify-center mb-1">
-        <div className="flex items-center gap-1 px-4 py-1 bg-slate-900 border-2 border-dashed border-white/60 rounded-t-xl text-xs font-bold text-white shadow-md">
+      <div className="w-full flex justify-center mb-1.5">
+        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-slate-800 border border-slate-600 rounded-t-xl text-xs font-bold text-slate-200 shadow-md">
           <span>🥅 Khung thành Đội Đỏ (Đội Trắng tấn công)</span>
         </div>
       </div>
 
       {/* Main Pitch Stadium */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-700 bg-emerald-800 p-2 md:p-3">
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-600 bg-slate-800 p-2 md:p-3">
         {/* Pitch Turf Grid */}
         <div
-          className="grid gap-[2px] md:gap-1 relative bg-emerald-950 p-1 md:p-2 rounded-xl"
+          className="grid gap-[2px] md:gap-1 relative bg-[#14532d] p-1.5 md:p-2 rounded-xl border border-slate-600/50 shadow-inner"
           style={{
             gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${BOARD_HEIGHT}, minmax(0, 1fr))`,
@@ -73,7 +73,7 @@ export default function PitchBoard({
               const isTarget = isValidTarget(x, y);
               const isSelected = selectedPiece?.position.x === x && selectedPiece?.position.y === y;
 
-              // Turf pattern styling
+              // Turf pattern styling (Natural lush green lawn stripes)
               const isEvenRow = y % 2 === 0;
               const isEvenCell = (x + y) % 2 === 0;
               const isCenterLine = y === 7;
@@ -88,15 +88,15 @@ export default function PitchBoard({
               const isInBlackSetupZone = y >= 1 && y <= 6 && !isOutOfPitch;
               const isInActiveSetupZone = isSetupMode && (setupTeam === 'white' ? isInWhiteSetupZone : isInBlackSetupZone);
 
-              let cellBg = isEvenRow ? 'bg-emerald-700/80' : 'bg-emerald-600/80';
-              if (isEvenCell) cellBg += ' brightness-95';
+              let cellBg = isEvenRow ? 'bg-[#15803d]' : 'bg-[#16a34a]';
+              if (isEvenCell) cellBg += ' brightness-[0.96]';
 
               if (isTopGoalArea || isBottomGoalArea) {
-                cellBg = 'bg-gradient-to-b from-yellow-950/90 to-slate-950/90 border-2 border-yellow-400 shadow-inner';
+                cellBg = 'bg-gradient-to-b from-amber-900/80 to-slate-800/90 border-2 border-amber-400 shadow-inner';
               } else if (isOutOfPitch) {
                 cellBg = 'opacity-0 pointer-events-none';
               } else if (isInActiveSetupZone) {
-                cellBg += ' ring-1 ring-amber-400/30';
+                cellBg += ' ring-1 ring-amber-400/50';
               }
 
               const handleSquareClick = () => {
@@ -224,9 +224,9 @@ export default function PitchBoard({
       </div>
 
       {/* Bottom Goal Post Frame */}
-      <div className="w-full flex justify-center mt-1">
-        <div className="flex items-center gap-1 px-4 py-1 bg-slate-900 border-2 border-dashed border-white/60 rounded-b-xl text-xs font-bold text-white shadow-md">
-          <span>🥅 Khung thành Đội Đỏ (Đội Trắng tấn công)</span>
+      <div className="w-full flex justify-center mt-1.5">
+        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-slate-800 border border-slate-600 rounded-b-xl text-xs font-bold text-slate-200 shadow-md">
+          <span>🥅 Khung thành Đội Trắng (Đội Đỏ tấn công)</span>
         </div>
       </div>
     </div>

@@ -54,7 +54,7 @@ export default function App() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 py-4 sm:py-6 selection:bg-amber-400 selection:text-slate-950">
+    <main className="min-h-screen bg-[#0f172a] bg-gradient-to-b from-[#1e293b] via-[#0f172a] to-[#0b1120] text-slate-100 py-3 sm:py-5 selection:bg-amber-400 selection:text-slate-950 font-sans">
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
         {currentScreen === 'menu' && (
           <MainMenu
