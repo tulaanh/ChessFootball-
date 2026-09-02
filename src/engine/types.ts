@@ -29,6 +29,7 @@ export interface PieceDefinition {
     power?: number; // visual power rating 1-5
   };
   hasBulldozer?: boolean; // Skill: Sự Trâu Bò (khi cầm bóng đâm vào quân đối phương sẽ không mất lượt)
+  hasMasterBallControl?: boolean; // Skill: Khống Chế Thượng Thừa (di chuyển nhận bóng không mất lượt)
   specialAbilityDesc?: string;
 }
 

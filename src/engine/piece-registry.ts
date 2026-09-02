@@ -122,6 +122,8 @@ export const INITIAL_PIECES: PieceDefinition[] = [
       vectors: DIAGONAL_VECTORS,
       power: 4,
     },
+    hasMasterBallControl: true,
+    specialAbilityDesc: 'Khống Chế Thượng Thừa: Di chuyển vào ô có bóng để nhận bóng sẽ KHÔNG MẤT LƯỢT!',
   },
 
   // 5. KNIGHT (Tiền Đạo Lốp Bóng / Mã)

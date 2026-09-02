@@ -74,7 +74,10 @@ export default function RulesModal({ onClose }: RulesModalProps) {
               • <strong>Quân Xe (♖) - Sự Trâu Bò:</strong> Khi cầm bóng đâm vào đối thủ sẽ húc văng đối phương ra xa và tiếp tục giữ bóng mà không mất lượt (Hồi chiêu 1 lượt).
             </p>
             <p>
-              • <strong>Quỹ Lương (Salary Cap):</strong> Mỗi đội có tối đa <strong>150 điểm</strong> để chiêu mộ 11 quân cờ. Hãy cân nhắc giữa các siêu sao đắt giá và các quân cờ phụ trợ!
+              • <strong>Quân Tượng (♗) - Khống Chế Thượng Thừa:</strong> Chuyên gia hãm bóng chéo! Mỗi khi di chuyển vào ô có bóng để nhận bóng sẽ <em>hoàn toàn KHÔNG MẤT LƯỢT ĐI</em>.
+            </p>
+            <p>
+              • <strong>Quỹ Lương (Salary Cap):</strong> Mỗi đội có tối đa <strong>150 điểm</strong> để chiêu mộ tối đa 11 quân cờ.
             </p>
           </div>
         </div>

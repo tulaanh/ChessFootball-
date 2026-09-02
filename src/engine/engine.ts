@@ -522,6 +522,7 @@ export function executeMove(
 
   let isBallSteal = false;
   const isCollectingBall = !isCarryingBall && board.ballPosition.x === targetX && board.ballPosition.y === targetY;
+  const isMasterBallControl = isCollectingBall && Boolean(def.hasMasterBallControl);
   const isBulldozeReady = isCarryingBall && opponentIndex !== -1 && Boolean(def.hasBulldozer) && (!piece.abilityCooldown || piece.abilityCooldown === 0);
   const isBulldozeOnCooldown = isCarryingBall && opponentIndex !== -1 && Boolean(def.hasBulldozer) && Boolean(piece.abilityCooldown && piece.abilityCooldown > 0);
   const isBulldoze = isBulldozeReady;
@@ -556,7 +557,9 @@ export function executeMove(
   } else {
     commentary.unshift({
       id: `c_${Date.now()}`,
-      text: isCollectingBall
+      text: isMasterBallControl
+        ? `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} kích hoạt kỹ năng [KHỐNG CHẾ THƯỢNG THỪA]! Băng vào hãm bóng dính như keo mà KHÔNG MẤT LƯỢT!`
+        : isCollectingBall
         ? `⚡ [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} đã di chuyển khống chế bóng thành công.`
         : isCarryingBall
         ? `🏃 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} dẫn bóng tới vị trí (${targetX}, ${targetY}).`
@@ -574,12 +577,11 @@ export function executeMove(
     abilityCooldown: isBulldoze ? 1 : newPieces[pieceIndex].abilityCooldown,
   };
 
-  // Giữ lượt khi: Cướp bóng thành công hoặc Thể hiện [SỰ TRÂU BÒ] (Xe dẫn bóng đâm đối thủ)
-  // Di chuyển đến nhận bóng tiêu tốn 1 AP bình thường
+  // Giữ lượt khi: Cướp bóng thành công, Thể hiện [SỰ TRÂU BÒ] (Xe húc), hoặc [KHỐNG CHẾ THƯỢNG THỪA] (Tượng nhận bóng)
   let isTurnOver = false;
   let remainingAP = board.remainingAP;
 
-  if (isBallSteal || isBulldoze) {
+  if (isBallSteal || isBulldoze || isMasterBallControl) {
     isTurnOver = false;
     remainingAP = board.remainingAP;
   } else {
