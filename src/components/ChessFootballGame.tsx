@@ -100,7 +100,7 @@ export default function ChessFootballGame({
               setFloatingEmotes((prev) => prev.filter((e) => e.id !== newEmote.id));
             }, 3000);
           } else if (packet.type === 'RESET_REQUEST') {
-            setBoard(createInitialBoard(whiteRoster, blackRoster, board.targetScore));
+            handleRematch(false);
           }
         },
         onError: (err) => {
@@ -219,11 +219,54 @@ export default function ChessFootballGame({
     updateAndSyncBoard(nextBoard);
   };
 
-  const handleResetMatch = () => {
-    if (window.confirm('Bạn có chắc muốn thi đấu lại từ đầu (tỉ số 0 - 0)?')) {
-      const nextBoard = createInitialBoard(whiteRoster, blackRoster, board.targetScore);
-      updateAndSyncBoard({ ...nextBoard, phase: 'playing' });
+  // Rematch / Reset match keeping the customized saved formations!
+  const handleRematch = (showConfirm = false) => {
+    if (showConfirm && !window.confirm('Bạn có chắc muốn thi đấu lại từ đầu (tỉ số 0 - 0) với đội hình hiện tại?')) {
+      return;
     }
+
+    const resetPieces = board.savedFormation
+      ? board.savedFormation.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }))
+      : board.pieces.map((p) => ({
+          ...p,
+          position: { ...p.position },
+          isStunned: false,
+          abilityCooldown: 0,
+        }));
+
+    const nextBoard: BoardState = {
+      ...board,
+      phase: 'playing',
+      pieces: resetPieces,
+      ballPosition: { x: 5, y: 7 },
+      score: { white: 0, black: 0 },
+      winner: null,
+      lastGoalScorer: undefined,
+      currentTurn: 'white',
+      remainingAP: 2,
+      turnNumber: 1,
+      selectedPieceId: null,
+      activeAction: null,
+      commentary: [
+        {
+          id: `c_${Date.now()}`,
+          text: '🔄 Trận đấu tái đấu (Rematch) bắt đầu! Đội Trắng giao bóng.',
+          type: 'whistle',
+          timestamp: '00:00',
+        },
+      ],
+    };
+
+    updateAndSyncBoard(nextBoard);
+  };
+
+  const handleResetMatch = () => {
+    handleRematch(true);
   };
 
   const isWhiteTurn = board.currentTurn === 'white';
@@ -588,9 +631,7 @@ export default function ChessFootballGame({
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <button
-                onClick={() =>
-                  setBoard(createInitialBoard(whiteRoster, blackRoster, board.targetScore))
-                }
+                onClick={() => handleRematch(false)}
                 className="py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-sm shadow-xl"
               >
                 🔄 Thi Đấu Lại (Rematch)
