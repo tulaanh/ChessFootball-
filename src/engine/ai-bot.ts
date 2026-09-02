@@ -111,12 +111,15 @@ export function getBestAIMove(
               reason = `👑 Chuyền bóng an toàn cho ${getPieceDefinition(receiver.typeId).vietnameseName}`;
 
               // Ưu tiên chuyền cho Hậu (NẾU Hậu chưa dùng Hào quang trong lượt này)
-              if (
-                (receiver.typeId === 'queen' || def.hasPlaymakerAura) &&
-                (!receiver.abilityCooldown || receiver.abilityCooldown <= 0)
-              ) {
-                score += 8000;
-                reason = '🌟 Chuyền bóng cho Hậu (Kích hoạt Hào Quang Nhạc Trưởng hồi 2 AP)';
+              if (receiver.typeId === 'queen' || def.hasPlaymakerAura) {
+                if (!receiver.abilityCooldown || receiver.abilityCooldown <= 0) {
+                  score += 8000;
+                  reason = '🌟 Chuyền bóng cho Hậu (Kích hoạt Hào Quang Nhạc Trưởng hồi 2 AP)';
+                } else {
+                  // Hậu đã dùng Hào quang trong lượt này rồi -> Không chuyền ngược lại cho Hậu nữa để tránh lặp vô tận
+                  score -= 25000;
+                  reason = '🛑 Tránh chuyền ngược lại cho Hậu đã dùng Hào Quang';
+                }
               }
 
               // Ưu tiên chuyền cho Tiền đạo / Pháo / Mã ở tuyến trên

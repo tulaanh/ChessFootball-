@@ -794,14 +794,13 @@ export function executeKick(
           timestamp: timeStr,
         });
       } else {
-        // Normal pass: consumes 1 AP
-        const nextAP = board.remainingAP - 1;
-        isTurnOver = nextAP <= 0;
-        remainingAP = isTurnOver ? 2 : nextAP;
+        // Normal pass to teammate: KEEPS TURN!
+        isTurnOver = false;
+        remainingAP = board.remainingAP;
 
         commentary.unshift({
           id: `c_${Date.now()}`,
-          text: `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho ${recvDef.vietnameseName}! (Chuyền thành công${isTurnOver ? ' - Hết lượt!' : ' - Còn 1 lượt!'})`,
+          text: `🎯 [${piece.team === 'white' ? 'Trắng' : 'Đỏ'}] ${def.vietnameseName} chuyền bóng chuẩn xác cho ${recvDef.vietnameseName}! (Chuyền thành công - Giữ lượt!)`,
           type: 'pass',
           team: piece.team,
           timestamp: timeStr,
