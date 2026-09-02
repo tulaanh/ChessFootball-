@@ -581,10 +581,10 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Layout: Left Available Pieces (3-4 cols) + Right Grass Pitch (8-9 cols) */}
+      {/* Main Layout: Left Available Pieces (4 cols) + Right Grass Pitch (8 cols) */}
       <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 25-30% width) */}
-        <div className="lg:col-span-4 xl:col-span-3 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 33% width / 4 cols) */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
             <div>
@@ -626,7 +626,7 @@ export default function TacticalSetup({
           )}
 
           {/* Available Pieces List */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-2 custom-scrollbar max-h-[440px]">
+          <div className="flex-1 p-3 overflow-y-auto space-y-2.5 custom-scrollbar max-h-[440px]">
             {piecesAvailableToAdd.map((pieceDef) => {
               const countOnPitch = currentTeamPieces.filter((p) => p.typeId === pieceDef.id).length;
               const canAfford = remainingBudget >= pieceDef.cost;
@@ -657,7 +657,7 @@ export default function TacticalSetup({
                   onClick={() => {
                     if (canAdd) handleSelectPieceTypeToPlace(pieceDef.id);
                   }}
-                  className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center justify-between gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 transition-all cursor-pointer ${
                     isPlacingThis
                       ? 'bg-lime-400/25 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.5)] text-white'
                       : canAdd
@@ -665,51 +665,50 @@ export default function TacticalSetup({
                       : 'bg-slate-800/60 border-slate-700/60 opacity-60 text-slate-300'
                   }`}
                 >
-                  {/* Left: 3D Symbol Token & Name & Price */}
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-lg border-2 ${
-                        isQueen
-                          ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/50'
-                          : isRook
-                          ? 'bg-gradient-to-br from-blue-600 to-indigo-800 text-white border-blue-400'
-                          : isCannon
-                          ? 'bg-gradient-to-br from-orange-600 to-red-800 text-white border-orange-400'
-                          : isKnight
-                          ? 'bg-gradient-to-br from-emerald-600 to-teal-800 text-white border-emerald-400'
-                          : isBishop
-                          ? 'bg-gradient-to-br from-cyan-600 to-blue-800 text-white border-cyan-400'
-                          : 'bg-slate-800 text-slate-200 border-slate-600'
-                      }`}
-                    >
-                      <span className="leading-none drop-shadow-md">{pieceDef.symbol}</span>
+                  {/* Left: 3D Symbol Token */}
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-lg border-2 ${
+                      isQueen
+                        ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/50'
+                        : isRook
+                        ? 'bg-gradient-to-br from-blue-600 to-indigo-800 text-white border-blue-400'
+                        : isCannon
+                        ? 'bg-gradient-to-br from-orange-600 to-red-800 text-white border-orange-400'
+                        : isKnight
+                        ? 'bg-gradient-to-br from-emerald-600 to-teal-800 text-white border-emerald-400'
+                        : isBishop
+                        ? 'bg-gradient-to-br from-cyan-600 to-blue-800 text-white border-cyan-400'
+                        : 'bg-slate-800 text-slate-200 border-slate-600'
+                    }`}
+                  >
+                    <span className="leading-none drop-shadow-md">{pieceDef.symbol}</span>
+                  </div>
+
+                  {/* Middle Info (flex-1 min-w-0 prevents any text overlap) */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs sm:text-sm font-black text-white truncate">
+                        {pieceDef.vietnameseName}
+                      </span>
+                      {countOnPitch > 0 && (
+                        <span className="text-[9px] bg-slate-950 text-lime-400 px-1.5 py-0.5 rounded-full font-mono font-black border border-lime-500/50 shadow-sm shrink-0">
+                          x{countOnPitch}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="truncate">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-white truncate">
-                          {pieceDef.vietnameseName}
-                        </span>
-                        {countOnPitch > 0 && (
-                          <span className="text-[10px] bg-slate-950 text-lime-400 px-2 py-0.5 rounded-full font-mono font-black border border-lime-500/50 shadow-sm">
-                            Đang có: {countOnPitch}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Monetary badge */}
-                      <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full font-mono font-black text-xs flex items-center gap-1 border shadow-sm ${
-                            isQueen
-                              ? 'bg-amber-400 text-slate-950 border-amber-300 ring-1 ring-amber-300'
-                              : 'bg-slate-950 text-amber-300 border-amber-400/60'
-                          }`}
-                        >
-                          <span>🪙</span>
-                          <span>{pieceDef.cost}đ</span>
-                        </span>
-                      </div>
+                    {/* Monetary badge */}
+                    <div className="mt-1">
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-mono font-black text-[11px] inline-flex items-center gap-1 border shadow-sm leading-none ${
+                          isQueen
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 ring-1 ring-amber-300'
+                            : 'bg-slate-950 text-amber-300 border-amber-400/60'
+                        }`}
+                      >
+                        <span>🪙</span>
+                        <span>{pieceDef.cost}đ</span>
+                      </span>
                     </div>
                   </div>
 
@@ -722,22 +721,22 @@ export default function TacticalSetup({
                         e.stopPropagation();
                         handleSelectPieceTypeToPlace(pieceDef.id);
                       }}
-                      className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow-md ${
+                      className={`shrink-0 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-black text-xs flex items-center justify-center gap-1 transition-all shadow-md ${
                         isPlacingThis
                           ? 'bg-lime-400 text-slate-950 ring-2 ring-lime-300 animate-pulse'
                           : canAdd
                           ? 'bg-slate-900 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
-                          : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
                       }`}
                     >
                       <span>
                         {isPlacingThis
-                          ? '✓ Đang chọn'
+                          ? '✓ Chọn'
                           : canAdd
-                          ? '➕ Đặt quân'
+                          ? '➕ Đặt'
                           : isSquadFull
-                          ? 'Đầy đội hình'
-                          : 'Hết điểm'}
+                          ? '🔒 Đầy'
+                          : '🔒 Hết đ'}
                       </span>
                     </button>
                   )}
