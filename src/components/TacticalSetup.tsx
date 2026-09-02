@@ -659,16 +659,16 @@ export default function TacticalSetup({
                   }}
                   className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all cursor-pointer ${
                     isPlacingThis
-                      ? 'bg-lime-400/20 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.4)] text-white'
+                      ? 'bg-lime-400/25 border-lime-400 ring-2 ring-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.5)] text-white'
                       : canAdd
-                      ? `bg-slate-800/90 ${tierBorderColor} hover:bg-slate-700/80 text-slate-100 shadow-md hover:shadow-xl hover:scale-[1.01]`
-                      : 'bg-slate-900/40 border-slate-800 opacity-40 cursor-not-allowed text-slate-500'
+                      ? `bg-slate-800/95 ${tierBorderColor} hover:bg-slate-700 text-slate-100 shadow-md hover:shadow-xl hover:scale-[1.01]`
+                      : 'bg-slate-800/60 border-slate-700/60 opacity-60 text-slate-300'
                   }`}
                 >
-                  {/* Left: 3D Symbol Token & Name & Role */}
+                  {/* Left: 3D Symbol Token & Name & Price */}
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-lg border-2 ${
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-lg border-2 ${
                         isQueen
                           ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/50'
                           : isRook
@@ -682,54 +682,32 @@ export default function TacticalSetup({
                           : 'bg-slate-800 text-slate-200 border-slate-600'
                       }`}
                     >
-                      <span className="leading-none drop-shadow">{pieceDef.symbol}</span>
+                      <span className="leading-none drop-shadow-md">{pieceDef.symbol}</span>
                     </div>
 
                     <div className="truncate">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs sm:text-sm font-black text-white truncate">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-white truncate">
                           {pieceDef.vietnameseName}
                         </span>
                         {countOnPitch > 0 && (
-                          <span className="text-[9px] bg-slate-950 text-lime-400 px-1.5 py-0.5 rounded-full font-mono font-black border border-lime-500/50 shadow-sm">
-                            Đang xếp: {countOnPitch}
+                          <span className="text-[10px] bg-slate-950 text-lime-400 px-2 py-0.5 rounded-full font-mono font-black border border-lime-500/50 shadow-sm">
+                            Đang có: {countOnPitch}
                           </span>
                         )}
                       </div>
+
+                      {/* Monetary badge */}
                       <div className="flex items-center gap-2 mt-1">
-                        {/* High-contrast gold monetary badge */}
                         <span
-                          className={`px-2 py-0.5 rounded-full font-mono font-black text-[10px] sm:text-xs flex items-center gap-1 border shadow-sm ${
+                          className={`px-2.5 py-0.5 rounded-full font-mono font-black text-xs flex items-center gap-1 border shadow-sm ${
                             isQueen
                               ? 'bg-amber-400 text-slate-950 border-amber-300 ring-1 ring-amber-300'
-                              : pieceDef.cost >= 20
-                              ? 'bg-slate-950 text-lime-300 border-lime-400/80'
-                              : 'bg-slate-950 text-amber-300 border-slate-700'
+                              : 'bg-slate-950 text-amber-300 border-amber-400/60'
                           }`}
                         >
                           <span>🪙</span>
                           <span>{pieceDef.cost}đ</span>
-                        </span>
-
-                        {/* Refined Role Marker */}
-                        <span
-                          className={`text-[9px] sm:text-[10px] font-black uppercase px-1.5 py-0.5 rounded-full border leading-none ${
-                            pieceDef.role === 'GK'
-                              ? 'bg-amber-400 text-slate-950 border-amber-300'
-                              : pieceDef.role === 'DEF'
-                              ? 'bg-blue-600 text-white border-blue-400'
-                              : pieceDef.role === 'MID'
-                              ? 'bg-emerald-500 text-slate-950 border-emerald-300'
-                              : 'bg-rose-600 text-white border-rose-400'
-                          }`}
-                        >
-                          {pieceDef.role === 'GK'
-                            ? '🧤 Thủ Môn'
-                            : pieceDef.role === 'DEF'
-                            ? '🛡️ Hậu Vệ'
-                            : pieceDef.role === 'MID'
-                            ? '⚡ Tiền Vệ'
-                            : '🎯 Tiền Đạo'}
                         </span>
                       </div>
                     </div>
@@ -744,13 +722,23 @@ export default function TacticalSetup({
                         e.stopPropagation();
                         handleSelectPieceTypeToPlace(pieceDef.id);
                       }}
-                      className={`px-3 py-2 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow-md ${
+                      className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1 shrink-0 transition-all shadow-md ${
                         isPlacingThis
                           ? 'bg-lime-400 text-slate-950 ring-2 ring-lime-300 animate-pulse'
-                          : 'bg-slate-900 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
+                          : canAdd
+                          ? 'bg-slate-900 hover:bg-lime-400 hover:text-slate-950 text-lime-300 border border-slate-700'
+                          : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                       }`}
                     >
-                      <span>{isPlacingThis ? '✓ Đang chọn' : '➕ Đặt quân'}</span>
+                      <span>
+                        {isPlacingThis
+                          ? '✓ Đang chọn'
+                          : canAdd
+                          ? '➕ Đặt quân'
+                          : isSquadFull
+                          ? 'Đầy đội hình'
+                          : 'Hết điểm'}
+                      </span>
                     </button>
                   )}
                 </div>
