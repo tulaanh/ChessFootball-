@@ -581,10 +581,10 @@ export default function TacticalSetup({
         </div>
       </div>
 
-      {/* Main Layout: Left Available Pieces (4 cols) + Right Grass Pitch (8 cols) */}
-      <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (~ 33% width / 4 cols) */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Main Layout: Side-by-Side Flex Layout (Left Sidebar + Right Pitch) */}
+      <div className="w-full flex-1 flex flex-col lg:flex-row gap-5 items-start justify-center">
+        {/* LEFT COLUMN: PIECES AVAILABLE TO ADD (Fixed 380-420px width) */}
+        <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
           {/* Header Bar */}
           <div className="p-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
             <div>
@@ -789,8 +789,8 @@ export default function TacticalSetup({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (~ 70-75% width) */}
-        <div className="lg:col-span-8 xl:col-span-9 flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-2xl relative">
+        {/* RIGHT COLUMN: Full Pitch Grass Canvas with Existing Pieces & Remove Action (Flex-1) */}
+        <div className="flex-1 min-w-0 w-full flex flex-col bg-slate-800/90 border border-slate-700 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-2xl relative">
           {/* Pitch Top Bar: Info Badge & Selected Piece Delete Bar */}
           <div className="flex items-center justify-between px-2 mb-2.5">
             <div className="flex items-center gap-2">
